@@ -29,11 +29,28 @@ Conventional Commits, all lines ≤80 chars. Subject `<type>(<scope>): <desc>` �
 ## Rules
 
 All rules live in `~/.claude/rules/`:
+- **code-principles.md** — YAGNI (design decisions, not spec fidelity), SOLID, no magic strings, native fetch
+- **security.md** — input validation, secrets handling, error hygiene
+- **testing.md** — TDD, 90/90/90 coverage, assertion quality
+- **testability.md** — pure functions, functional core/imperative shell, DI as mechanism
 - **commits.md** — Conventional Commits format and full spec
 - **parallelism.md** — multi-agent execution, file ownership, batching rules
+- **autonomous-execution.md** — mission briefs, quality gates, compaction recovery
+- **memory.md** — Mem0 usage, scoping, curator criteria
+- **lsp.md** — code navigation with typescript-lsp, pyright-lsp, rust-analyzer-lsp
+- **extended-thinking.md** — when to use extended thinking and how to request it
+
+## Agent Memory
+
+Local `.agent-notes/` observations + long-term Mem0 via MCP.
+The `memory-curator` agent handles promotion. See `~/.claude/rules/memory.md`.
 
 ## On Compaction
 
 CLAUDE.md is automatically reloaded from disk after compaction —
 it survives verbatim. Instructions lost after compaction were given
 only in conversation, not written to CLAUDE.md.
+
+A `PostCompact` hook injects `~/.claude/post-compact-context.md`
+for content that isn't in any instruction file: the autonomous
+execution recovery sequence.

@@ -1,8 +1,162 @@
 {
-  "model": "opusplan",
-  "attribution": {
-    "commit": ""
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(chmod:*)",
+      "Bash(mkdir *:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(openssl rand:*)",
+      "Bash(node -e:*)",
+      "Bash(python3:*)",
+      "Bash(pip3 install:*)",
+      "Bash(shellcheck:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git branch:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git stash:*)",
+      "Bash(git rm:*)",
+      "Bash(git check-ignore:*)",
+      "Bash(git remote:*)",
+      "Bash(git push:*)",
+      "Bash(git checkout:*)",
+      "Bash(git reset:*)",
+      "Bash(git -C:*)",
+      "Bash(gh api:*)",
+      "Bash(gh repo:*)",
+      "Bash(gh workflow list:*)",
+      "Bash(npm install:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(npm run:*)",
+      "Bash(npx eslint:*)",
+      "Bash(npx vitest:*)",
+      "Bash(npx prettier:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx playwright:*)",
+      "Bash(docker compose:*)",
+      "Bash(docker exec:*)",
+      "Bash(docker info:*)",
+      "Bash(docker model:*)",
+      "Bash(docker pull:*)",
+      "Bash(docker run:*)",
+      "Bash(docker search:*)",
+      "Bash(ollama list:*)",
+      "Bash(ollama show:*)",
+      "Bash(command -v:*)",
+      "Bash(claude mcp:*)",
+      "Bash(~/.claude/hooks/quality-gate.sh:*)",
+      "Bash(~/.claude/hooks/autonomous-toggle.sh on:*)",
+      "Bash(~/.claude/hooks/autonomous-toggle.sh off:*)",
+      "Bash(~/.claude/hooks/project-init.sh:*)",
+      "Bash(curl -s https://raw.githubusercontent.com/sseely-experity/claude-config/main/*)",
+      "Bash(curl -sS https://raw.githubusercontent.com/sseely-experity/claude-config/main/*)",
+      "Bash(curl -s https://raw.githubusercontent.com/ComposioHQ/awesome-claude-skills/master/*)",
+      "Bash(curl -s \"https://api.github.com/repos/sseely-experity/claude-config/*\")",
+      "Edit(~/git/**)",
+      "Write(~/git/**)",
+      "Read(~/git/**)",
+      "Glob(~/git/**)",
+      "Grep(~/git/**)",
+      "Edit(~/.claude/**)",
+      "Write(~/.claude/**)",
+      "Read(~/.claude/**)",
+      "Glob(~/.claude/**)",
+      "Grep(~/.claude/**)",
+      "Edit(~/church/**)",
+      "Write(~/church/**)",
+      "Read(~/church/**)",
+      "Glob(~/church/**)",
+      "Grep(~/church/**)",
+      "WebFetch(*)",
+      "WebSearch",
+      "Skill(update-config)",
+      "Skill(update-config:*)",
+      "Bash(uv run:*)",
+      "Bash(curl -s -X POST http://localhost:8765/api/v1/memories/ -H \"Content-Type: application/json\" -d '{\"\"\"\"text\"\"\"\":\"\"\"\"test memory\"\"\"\",\"\"\"\"app_id\"\"\"\":\"\"\"\"claude-code\"\"\"\",\"\"\"\"user_id\"\"\"\":\"\"\"\"default\"\"\"\"}')",
+      "Edit(~/.claude/skills/code-review/**)",
+      "Bash(mkdir -p /Users/scottseely/git/phil-elevator/public/guides)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(pdftotext -layout /Users/scottseely/git/phil-elevator/materials/640.pdf /tmp/640.txt)",
+      "Bash(pdftotext /Users/scottseely/git/phil-elevator/materials/640.pdf -)",
+      "Bash(pdfinfo /Users/scottseely/git/phil-elevator/materials/640.pdf)",
+      "Bash(perl -i -pe 's/\\\\\\(#\\([\\\\w-]*?\\)--/\\\\\\(#$1-/g' /Users/scottseely/git/phil-elevator/public/guides/635.md)",
+      "Bash(git config *)",
+      "Bash(pnpm install *)",
+      "Bash(npm --version)",
+      "Bash(volta install *)",
+      "Bash(pnpm --version)",
+      "Bash(pnpm add *)",
+      "Bash(pnpm remove *)",
+      "Bash(pip install *)",
+      "Bash(mkdocs build *)",
+      "Skill(plan-mission)",
+      "Skill(plan-mission:*)",
+      "Bash(node --input-type=module)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(pnpm vitest *)",
+      "Bash(sed -n '540,390p' /Users/scottseely/git/plantuml/src/main/java/gen/lib/dotgen/dotinit__c.java)",
+      "Bash(sed -n '340,395p' /Users/scottseely/git/plantuml/src/main/java/gen/lib/dotgen/dotinit__c.java)",
+      "Bash(npm test *)",
+      "Bash(echo \"DONE exit=$?\")",
+      "Bash(sed -i '' 's/return { nodes, edges, rankDir, nodeSep: 36, rankSep: 36 };/return { nodes, edges, longEdges: [], rankDir, nodeSep: 36, rankSep: 36 };/' /Users/scottseely/git/plantuml-js/tests/unit/dot/splines.test.ts)",
+      "Bash(sed -i '' 's/return { nodes, edges: \\\\[\\\\] as DotEdge\\\\[\\\\], rankDir, nodeSep: 20, rankSep: 40 };/return { nodes, edges: [] as DotEdge[], longEdges: [], rankDir, nodeSep: 20, rankSep: 40 };/' /Users/scottseely/git/plantuml-js/tests/unit/dot/position.test.ts)",
+      "Bash(npx tsx *)",
+      "mcp__mem0__search_memory",
+      "Bash(gh auth *)",
+      "Bash(gh run *)",
+      "Bash(node_modules/.bin/jiti --version)",
+      "Bash(node_modules/.bin/jiti --help)",
+      "Bash(node_modules/.bin/jiti tests/e2e/rendering.spec.ts)",
+      "Bash(pnpm visual:capture)",
+      "Bash(pnpm visual:compare)",
+      "Bash(pnpm test *)",
+      "Bash(pnpm typecheck *)",
+      "Bash(pnpm lint *)",
+      "Bash(open test-results/visual-qa/index.html)",
+      "Bash(echo \"Dev server PID: $!\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173)",
+      "Bash(curl -s http://localhost:5173)",
+      "Bash(pkill -f \"vite\")",
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_snapshot",
+      "mcp__playwright__browser_click",
+      "mcp__playwright__browser_take_screenshot",
+      "mcp__playwright__browser_evaluate",
+      "Bash(xargs kill *)",
+      "Bash(echo \"server PID: $!\")",
+      "Bash(curl -s http://localhost:5173/)",
+      "Bash(curl -s http://localhost:5173 -o /tmp/index.html)",
+      "Bash(node inspect-class.mjs)",
+      "Bash(cp ~/git/plantuml/src/test/resources/vega/sequence/*.puml /Users/scottseely/git/plantuml-js/tests/corpus/sequence/)",
+      "Bash(cp ~/git/plantuml/src/test/resources/vega/scxml/*.puml /Users/scottseely/git/plantuml-js/tests/corpus/state/)",
+      "Bash(mv /Users/scottseely/git/plantuml-js/tests/corpus/other/*.puml /Users/scottseely/git/plantuml-js/tests/corpus/sequence/)",
+      "Bash(shuf -n 20)",
+      "Bash(awk -F'|' '{if \\($3 < 90 && $3 > 0\\) print $0}')",
+      "Bash(sed -i '' '/const hideEmptyMem/d' src/diagrams/class/parser.ts)",
+      "Bash(sed -i '' '/void hideEmptyMem/d' src/diagrams/class/parser.ts)",
+      "Bash(npx jiti *)",
+      "Bash(npx wrangler *)",
+      "Bash(gh pr create --title 'feat\\(preprocessor\\): complete PlantUML preprocessor pipeline' --body ' *)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(npm info *)",
+      "Bash(git merge *)",
+      "Bash(git cherry-pick *)",
+      "Bash(pnpm run *)",
+      "Bash(git pull *)"
+    ],
+    "additionalDirectories": [
+      "/tmp",
+      "/private/tmp",
+      "/Users/jeanseely/.claude",
+      "/Users/jeanseely/.claude/skills",
+      "/Users/jeanseely",
+      "/Users/jeanseely/.claude/rules"
+    ]
   },
+  "model": "opusplan",
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -11,6 +165,21 @@
             "type": "command",
             "command": "~/.claude/hooks/record-turn-start.sh",
             "async": true
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/project-init.sh",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cat ~/.claude/post-compact-context.md"
           }
         ]
       }
@@ -27,24 +196,20 @@
       }
     ]
   },
-  "permissions": {
-    "allow": [
-      "Bash(ls:*)",
-      "Bash(openssl rand:*)",
-      "Bash(npm install:*)",
-      "Bash(docker-compose up:*)",
-      "Bash(chmod:*)",
-      "Bash([ -d node_modules ])",
-      "Bash(npm run dev:*)",
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
-      "Bash(find:*)",
-      "Bash(node -e:*)",
-      "Bash(python3:*)",
-      "Bash(grep:*)",
-      "Bash(gh workflow list:*)",
-      "Bash(npm run test:*)",
-      "Bash(npx eslint:*)"
-    ]
+  "enabledPlugins": {
+    "typescript-lsp@claude-plugins-official": true,
+    "pyright-lsp@claude-plugins-official": true,
+    "rust-analyzer-lsp@claude-plugins-official": true,
+    "csharp-lsp@claude-plugins-official": true,
+    "jdtls-lsp@claude-plugins-official": true,
+    "claude-code-setup@claude-plugins-official": true
+  },
+  "extraKnownMarketplaces": {
+    "claude-plugins-official": {
+      "source": {
+        "source": "git",
+        "url": "https://github.com/anthropics/claude-plugins-official.git"
+      }
+    }
   }
 }
