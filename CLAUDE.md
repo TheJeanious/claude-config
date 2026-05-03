@@ -14,6 +14,31 @@ For multi-part tasks or more than ~2 pages of output:
 
 For features requiring 1-4 hours of autonomous work, use `/plan-mission` to generate a mission brief first.
 
+## Skills
+
+Skills are invoked via the Skill tool when users type `/skill-name`. Proactively
+suggest the right skill when the user's request matches a trigger. Full reference
+with all triggers and agent categories: `~/.claude/rules/skills-guide.md`.
+
+**Key triggers — suggest these proactively:**
+| User intent | Skill |
+|-------------|-------|
+| Failing test / build / runtime error | `/fix` |
+| Pre-merge or PR review | `/code-review` or `/review-pr` |
+| Security audit of branch | `/security-review` |
+| Large feature (1–4 hrs of work) | `/plan-mission` |
+| Unfamiliar codebase, need architecture map | `/explore` |
+| Upgrade or audit dependencies | `/upgrade-deps` |
+| Code quality pass after changes | `/simplify` |
+| Recurring task / polling | `/loop` |
+| Cron job / one-time scheduled run | `/schedule` |
+| Hooks, permissions, env vars, settings.json | `/update-config` |
+| Scaffold auth / payments / analytics / i18n | `/auth-setup`, `/payments-setup`, `/analytics-setup`, `/i18n-setup` |
+| Generate user-facing changelog | `/changelog-generator` |
+| Sync with upstream claude-config | `/sync-claude` |
+| Test local web app with Playwright | `/webapp-testing` |
+| Code using `anthropic` SDK / prompt caching | `/claude-api` |
+
 ## Agents
 
 Agents live in `~/.claude/agents/`. Invoke via the Agent tool with `subagent_type` matching the agent's `name`. Default to handling tasks directly; delegate when the task clearly falls within a specialist's domain. Agent descriptions are loaded automatically. Always announce which agent you are invoking and why before calling it.
