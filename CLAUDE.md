@@ -1,21 +1,47 @@
-# Working with Claude Code - Best Practices
+# Claude Code — Global Instructions
 
 ## Interaction Style
 
-**Be direct and efficient.**
-- State facts without qualifying language ("Perfect!", "Great!", etc.)
-- Communicate as a peer — no deference, no filler
-- Brief completion summaries are fine — include what changed and
-  anything useful learned along the way
+- Be direct. No filler phrases ("Perfect!", "Great!", "Certainly!"), no pleasantries.
+- After completing a task, briefly summarize what was done and the reasoning behind any non-obvious decisions. Identify any agents used.
 
-For complex tasks, outline the plan for review before executing. Use TodoWrite to track progress.
+## Complex Tasks
 
-## When to Use Agents
+For multi-part tasks or more than ~2 pages of output:
+1. Present an outline for review before executing
+2. Complete one section at a time
+3. Use TodoWrite to track progress
 
-Default to handling tasks directly. Delegate via the Agent tool when
-a specialist would add real value — match the task to the built-in
-agent catalog descriptions.
+For features requiring 1-4 hours of autonomous work, use `/plan-mission` to generate a mission brief first.
 
+## Skills
+
+Skills are invoked via the Skill tool when users type `/skill-name`. Proactively
+suggest the right skill when the user's request matches a trigger. Full reference
+with all triggers and agent categories: `~/.claude/rules/skills-guide.md`.
+
+**Key triggers — suggest these proactively:**
+| User intent | Skill |
+|-------------|-------|
+| Failing test / build / runtime error | `/fix` |
+| Pre-merge or PR review | `/code-review` or `/review-pr` |
+| Security audit of branch | `/security-review` |
+| Large feature (1–4 hrs of work) | `/plan-mission` |
+| Unfamiliar codebase, need architecture map | `/explore` |
+| Upgrade or audit dependencies | `/upgrade-deps` |
+| Code quality pass after changes | `/simplify` |
+| Recurring task / polling | `/loop` |
+| Cron job / one-time scheduled run | `/schedule` |
+| Hooks, permissions, env vars, settings.json | `/update-config` |
+| Scaffold auth / payments / analytics / i18n | `/auth-setup`, `/payments-setup`, `/analytics-setup`, `/i18n-setup` |
+| Generate user-facing changelog | `/changelog-generator` |
+| Sync with upstream claude-config | `/sync-claude` |
+| Test local web app with Playwright | `/webapp-testing` |
+| Code using `anthropic` SDK / prompt caching | `/claude-api` |
+
+## Agents
+
+Agents live in `~/.claude/agents/`. Invoke via the Agent tool with `subagent_type` matching the agent's `name`. Default to handling tasks directly; delegate when the task clearly falls within a specialist's domain. Agent descriptions are loaded automatically. Always announce which agent you are invoking and why before calling it.
 
 ## Multi-Agent Parallelism
 
@@ -25,11 +51,31 @@ Plan before executing: list subtasks, mark dependencies, assign file ownership (
 
 Conventional Commits, all lines ≤80 chars. Subject `<type>(<scope>): <desc>` ≤72 chars, lowercase, no period. See `~/.claude/rules/commits.md` for full spec.
 
-## On compaction
+## Rules
 
-Always preserve:
-- Completed and in-progress todo items
-- Architecture and design decisions made
-- Active agent assignments and their file ownership
-- Test patterns and known gotchas
-- The next planned task with enough detail to resume (ticket/spec reference if applicable)
+All rules live in `~/.claude/rules/`:
+- **code-principles.md** — YAGNI (design decisions, not spec fidelity), SOLID, no magic strings, native fetch
+- **security.md** — input validation, secrets handling, error hygiene
+- **testing.md** — TDD, 90/90/90 coverage, assertion quality
+- **testability.md** — pure functions, functional core/imperative shell, DI as mechanism
+- **commits.md** — Conventional Commits format and full spec
+- **parallelism.md** — multi-agent execution, file ownership, batching rules
+- **autonomous-execution.md** — mission briefs, quality gates, compaction recovery
+- **memory.md** — Mem0 usage, scoping, curator criteria
+- **lsp.md** — code navigation with typescript-lsp, pyright-lsp, rust-analyzer-lsp
+- **extended-thinking.md** — when to use extended thinking and how to request it
+
+## Agent Memory
+
+Local `.agent-notes/` observations + long-term Mem0 via MCP.
+The `memory-curator` agent handles promotion. See `~/.claude/rules/memory.md`.
+
+## On Compaction
+
+CLAUDE.md is automatically reloaded from disk after compaction —
+it survives verbatim. Instructions lost after compaction were given
+only in conversation, not written to CLAUDE.md.
+
+A `PostCompact` hook injects `~/.claude/post-compact-context.md`
+for content that isn't in any instruction file: the autonomous
+execution recovery sequence.

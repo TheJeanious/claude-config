@@ -13,6 +13,7 @@ paste-cache/
 plans/
 plugins/
 projects/
+sessions/
 settings.local.json
 shell-snapshots/
 stats-cache.json
@@ -20,5 +21,14 @@ statsig/
 tasks/
 todos/
 
+# Hook runtime state (turn timestamps, etc.)
+.runtime/
+
 # MCP config has machine-specific paths
 .mcp.json
+
+# Anthropic-proprietary skills (© 2025 Anthropic, PBC — no redistribution)
+skills/doc-pdf/
+skills/doc-docx/
+skills/doc-pptx/
+skills/doc-xlsx/
