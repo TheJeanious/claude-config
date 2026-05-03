@@ -1,1 +1,8 @@
-[]
+[
+  {
+    "path": "skills/commit/SKILL.md",
+    "reason": "Local version has Jira ticket ID extraction and mandatory footer, intentional customization not in upstream",
+    "date": "2026-05-03",
+    "permanent": false
+  }
+]
