@@ -211,5 +211,6 @@
         "url": "https://github.com/anthropics/claude-plugins-official.git"
       }
     }
-  }
+  },
+  "agentPushNotifEnabled": true
 }

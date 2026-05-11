@@ -38,6 +38,8 @@ with all triggers and agent categories: `~/.claude/rules/skills-guide.md`.
 | Sync with upstream claude-config | `/sync-claude` |
 | Test local web app with Playwright | `/webapp-testing` |
 | Code using `anthropic` SDK / prompt caching | `/claude-api` |
+| Update recipe counts (photos, GF status) | `/recount` |
+| Regenerate Jeanius Kitchen cookbook PDFs | `/build-cookbook` |
 
 ## Agents
 

@@ -71,6 +71,13 @@ Skills are invoked via the Skill tool when users type `/skill-name`.
 | `/file-organizer` | Organizing files/folders: finding duplicates, suggesting structure, automating cleanup. |
 | `/brand-knowvah` | Brand-related tasks for Knowvah. |
 
+### Cookbook (Jeanius Kitchen)
+
+| Skill | Invoke when |
+|-------|-------------|
+| `/recount` | Updating recipe photo and GF status counts in RECIPE-STATUS.md and small-batch RECIPE-LIST.md. Run after adding/editing recipes or photos. |
+| `/build-cookbook` | Regenerating cookbook PDFs. Runs recount first, builds all (or specified) PDFs, commits. Args: `main`, `v2`, `compact`, `condensed`, `minimal`, `small-batch` (default: all). |
+
 ### Claude Code Environment
 
 | Skill | Invoke when |
