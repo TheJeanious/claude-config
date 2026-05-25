@@ -3,6 +3,8 @@
 # Runs as an async UserPromptSubmit hook; all operations are idempotent.
 
 set -euo pipefail
+# Fail-safe: setup errors must never block the user's prompt.
+trap 'exit 0' ERR
 
 PROJECT_DIR="$(pwd)"
 
@@ -19,6 +21,8 @@ fi
 
 # ── 2. .mcp.json ──────────────────────────────────────────────────────────────
 SERENA_DIR="${SERENA_HOME:-$HOME/git/serena}"
+# Code review: Mem0 URL is hardcoded to localhost:8765.
+# Revisit if MEM0_URL env var should be used for configurability.
 if [ ! -f "$PROJECT_DIR/.mcp.json" ]; then
   cat > "$PROJECT_DIR/.mcp.json" << EOF
 {

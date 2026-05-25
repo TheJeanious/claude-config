@@ -61,7 +61,7 @@ absent from the output, investigate why before proceeding:
 - **Lock files and dependency manifests** (`package-lock.json`,
   `requirements.txt`, `Gemfile.lock`) — absence is itself a finding
 
-## Step 2 — Ten parallel agents (launch all simultaneously)
+## Step 2 — Eleven parallel agents (launch all simultaneously)
 
 Each agent receives the full file inventory from Step 1. Agents use
 Read, Grep, Glob, Bash, WebSearch, and WebFetch. They must work through
@@ -220,7 +220,7 @@ Use WebSearch and WebFetch to check current stable versions and CVEs.
 - No sensitive data (tokens, PII, raw upstream errors) in logs
 - Errors logged with enough context to diagnose without reproduction
 - Concurrent-request handlers: correlation/trace ID in every log line
-- Fire-and-forget background tasks: errors surfaced, not silently lost
+
 
 ---
 
@@ -245,10 +245,6 @@ Use WebSearch and WebFetch to check current stable versions and CVEs.
 - Missing pagination on list endpoints
 - Synchronous/blocking operations that should be async
 - Unbounded loops or recursion over large collections
-- **Resource allocation inside long-lived objects:** any DB client,
-  HTTP client, or connection created per request/message inside a
-  Durable Object, singleton, or worker with long lifetime — allocate
-  once, reuse, or pass in from the caller
 - Missing DB indexes implied by query patterns
 - Large payloads serialized unnecessarily
 - Missing cache headers on static/infrequent responses
@@ -274,9 +270,43 @@ Use WebSearch and WebFetch to check current stable versions and CVEs.
 
 ---
 
-## Step 3 — Deduplication pass (run after all 10 agents complete)
+### Agent 11 — Operability & Production Readiness
 
-Run a single dedup agent. Give it all findings from all 10 agents.
+- **Observability coverage:** are new external calls, state changes,
+  and background jobs instrumented with metrics (rate, error rate,
+  duration) and traces? Are new error paths surfaced to alerting, or
+  do they fail silently?
+- **Silent failures:** fire-and-forget operations that catch errors
+  but do not log, metric, or alert — they will be invisible in
+  production
+- **On-call debuggability:** can an engineer diagnose a production
+  failure without pushing code? Check for: trace IDs in log lines,
+  structured error context, meaningful HTTP error bodies (not raw
+  stack traces), and queryable metrics
+- **Blast radius documentation:** for changes to shared interfaces,
+  data models, or API contracts, is the impact on consumers noted
+  in a comment or migration doc? A change that silently breaks
+  a consumer is worse than one that breaks loudly
+- **Rollback path:** for irreversible changes (schema migrations,
+  external API contract changes, data format changes), is the
+  irreversibility documented and explicitly tested? Is there a
+  compensating migration if rollback is required?
+- **Feature flag coverage:** for significant behavior changes, is
+  the new behavior gated behind a flag for gradual rollout and
+  instant kill-switch?
+- **Runbook coverage:** for new failure modes (new external dep,
+  new background job, new queue consumer), is there a runbook
+  reference or an `// on-call:` inline comment describing the
+  mitigation?
+- **Health check coverage:** if a new service dependency or
+  component is introduced, is it included in health checks and
+  readiness probes?
+
+---
+
+## Step 3 — Deduplication pass (run after all 11 agents complete)
+
+Run a single dedup agent. Give it all findings from all 11 agents.
 
 The dedup agent must:
 
@@ -320,14 +350,47 @@ Give agents this scoring rubric verbatim:
 
 Filtering rules after scoring:
 
-- **Drop** any finding scored below **50** — false positive or too minor
-  to act on.
-- **Downgrade severity** for any finding scored 50–64: cap at Suggestion
-  regardless of what the reviewing agent assigned.
-- **Keep as-is** findings scored 65 and above.
-- **Never drop** a finding scored 75+ regardless of severity — always
-  include it.
+Give scoring agents these numeric rules verbatim — do not paraphrase:
+
+> - Score 0: drop (confirmed false positive)
+> - Score 1–24: drop (weak signal, not worth tracking)
+> - Score 25–49: classify as Note or Suggestion (do not drop; see criteria
+>   below)
+> - Score 50–74: keep but cap severity at Suggestion regardless of what
+>   the reviewing agent assigned
+> - Score 75–100: keep as-is; never drop regardless of severity
+
 - **Positives** skip scoring — include all of them in the final report.
+
+### Classifying below-50 findings: Note vs. Suggestion
+
+**Suggestion** — the code could be improved but it is low-priority:
+- Structural or stylistic improvement with no risk implication
+- Refactoring opportunity (extract function, simplify logic)
+- Pattern inconsistency that would improve readability or consistency
+- Missing check unlikely to be hit under normal conditions
+
+**Note** — a concern worth preserving as an inline code comment so
+future readers are aware even if no change is warranted now:
+- A latent risk that would surface only under specific conditions
+- An assumption in the code that could break if circumstances change
+- A concurrency hazard, ordering dependency, or shared-state concern
+- An edge case the author likely did not consider
+- A design trade-off with future maintenance implications
+
+For each **Note** finding, draft the inline comment that *would* be
+added if the human authorizes it. Write it to the task file (see
+Final report); do **not** add it to source code during the review.
+
+```
+// Code review: <what was found>. Revisit if <triggering condition>.
+```
+
+Example:
+```
+// Code review: concurrent writes to this cache are not synchronized.
+// Revisit if this handler is ever called from multiple goroutines.
+```
 
 False positives to instruct scoring agents to watch for:
 
@@ -347,16 +410,74 @@ False positives to instruct scoring agents to watch for:
 
 ## Final report
 
+> **Code review is output-only. Do not modify any source file,
+> test file, or config during the review — not even to add a comment.**
+> All actionable items are written to a task file for human authorization.
+
 Merge the scored, filtered output into a single report organized by
 severity:
 
 **Critical** — must fix before merge  
 **Warning** — should fix  
 **Suggestion** — consider improving  
+**Note** — low-confidence finding; suggested inline comment awaits authorization  
 **Positive** — good practices worth noting  
 
-For each finding include: `file:line`, confidence score, what the issue
-is, and a concrete fix or recommendation.
+## Verdict
+
+After the final report, emit one of three verdicts based on the
+deduplicated, scored finding counts:
+
+| Verdict | Condition |
+|---------|-----------|
+| **APPROVE** | Critical = 0 AND Warning = 0 |
+| **APPROVE WITH NITS** | Critical = 0 AND Warning < 3 |
+| **REQUEST CHANGES** | Critical > 0 OR Warning ≥ 3 |
+
+State the verdict on its own line in bold at the top of the final
+report, before the severity sections.
+
+For Critical, Warning, and Suggestion: include `file:line`, confidence
+score, what the issue is, and a concrete fix or recommendation.
+
+For Notes: include `file:line`, what the review surfaced, and the
+full suggested comment text ready to paste.
 
 End with a one-line verdict: **APPROVE**, **APPROVE WITH NITS**, or
 **REQUEST CHANGES**.
+
+---
+
+## Task file
+
+After the report, write `code-review-tasks.md` in the project root.
+This file is the authorization checklist — the human reviews it,
+removes or modifies items, then runs a follow-up prompt to apply
+what remains.
+
+Format:
+
+```markdown
+# Code Review Tasks
+<!-- Generated by /code-review. Review each item, remove any you
+     don't want applied, then run: implement the tasks in
+     code-review-tasks.md -->
+
+## Must fix (Critical)
+- [ ] `file:line` — <issue>. Fix: <recommendation>
+
+## Should fix (Warning)
+- [ ] `file:line` — <issue>. Fix: <recommendation>
+
+## Consider improving (Suggestion)
+- [ ] `file:line` — <issue>. Improvement: <recommendation>
+
+## Inline comments to add (Notes — awaiting authorization)
+- [ ] `file:line` — add comment:
+  ```
+  // Code review: <what was found>. Revisit if <triggering condition>.
+  ```
+```
+
+Omit any section that has no items. Do not include Positives in the
+task file — they require no action.

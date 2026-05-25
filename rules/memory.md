@@ -16,15 +16,17 @@ proceeding.
 
 ## During Task Execution
 
+<!-- Code review: {task-id} naming is undefined for interactive sessions.
+     Revisit if note-writing should use a timestamp or topic slug as the
+     filename during non-autonomous sessions. -->
 Write a note to `.agent-notes/{task-id}.md` when you encounter:
 
-- Unexpected behavior in code, APIs, or infrastructure
+- Unexpected behavior in code, APIs, or infrastructure — including API usage that diverges from documentation
 - Undocumented conventions or implicit patterns in the codebase
 - Dependency quirks, version-specific gotchas, compatibility issues
 - Configuration that deviates from defaults or documentation
 - Error patterns and their root causes
 - Performance characteristics observed during execution
-- API usage patterns that differ from documentation
 
 Structure each entry as:
 
@@ -68,6 +70,9 @@ different repo benefit?" → project. "Different project?" → org.
 
 ## Search Behavior
 
+<!-- Code review: search order checks org scope before project scope,
+     which may surface broader memories before more precise ones.
+     Revisit if project-scoped memories should be checked before org. -->
 Default search order before a task:
 1. `repo:{current-repo}` scope
 2. `org` scope

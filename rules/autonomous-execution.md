@@ -132,9 +132,20 @@ Quality Gates:
 
 - Any push-forward condition listed in the mission brief applies
 - The choice is purely stylistic and doesn't affect behavior
+<!-- Code review: "task is simpler than estimated" could mask missing
+     context. Revisit: require a decision-journal entry before applying
+     this rule. -->
 - A task is simpler than estimated and can be done in fewer steps
 - An error message is self-explanatory and the fix is obvious
 - A dependency needs a minor/patch version bump
+
+### Consecutive-fix stop rule
+
+If you have attempted the same failing fix 3 or more consecutive times and the
+problem persists, **stop**. Three consecutive failures on the same issue signal
+an architectural or design problem that cannot be resolved by iterating on the
+same approach. Document the failure in the decision journal with the full error
+output and wait for human input.
 
 ### Always log the decision either way
 

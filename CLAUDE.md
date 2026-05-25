@@ -40,6 +40,7 @@ with all triggers and agent categories: `~/.claude/rules/skills-guide.md`.
 | Code using `anthropic` SDK / prompt caching | `/claude-api` |
 | Update recipe counts (photos, GF status) | `/recount` |
 | Regenerate Jeanius Kitchen cookbook PDFs | `/build-cookbook` |
+| Update recipe app after adding/changing recipes | `/update-recipe-app` |
 
 ## Agents
 
@@ -66,6 +67,13 @@ All rules live in `~/.claude/rules/`:
 - **memory.md** — Mem0 usage, scoping, curator criteria
 - **lsp.md** — code navigation with typescript-lsp, pyright-lsp, rust-analyzer-lsp
 - **extended-thinking.md** — when to use extended thinking and how to request it
+- **logging.md** — structured JSON logs, log levels, required fields, no PII
+- **error-handling.md** — throw vs return, wrap at boundaries, message quality
+- **api-design.md** — resource naming, standard envelopes, versioning strategy
+- **observability.md** — SLO-first design, RED metrics, distributed tracing, alerting
+- **architecture.md** — blast radius layers, ADRs, fitness functions, reversibility
+- **research-sources.md** — 5-tier source hierarchy for technical claims and design decisions
+- **prompting-quality.md** — constraint keywords, specificity, instruction bloat, session hygiene
 
 ## Agent Memory
 
