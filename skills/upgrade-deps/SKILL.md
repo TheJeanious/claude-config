@@ -4,12 +4,14 @@ description: >
   Audit and upgrade all dependencies in a project. Detects languages
   and frameworks, runs parallel research and security agents, spins up
   the appropriate language-pro agents for changes, then runs an
-  iterative review loop until the code-reviewer approves or 6
+  iterative review loop until the code-reviewer approves or 4
   iterations are exhausted. For complex upgrades (breaking changes or
   multiple languages), integrates with /plan-mission to generate a
   mission brief instead of executing directly.
 disable-model-invocation: false
 ---
+
+Model routing: Sonnet for implementation; Haiku for verification/scoring; Opus only for explicit architectural decisions.
 
 # Upgrade Dependencies
 
@@ -18,6 +20,24 @@ Audit and upgrade all dependencies for the current project.
 **Input:** `$ARGUMENTS` — optional scope. If empty, upgrades all
 dependencies. If provided, treats as a package name or glob
 (e.g. `django`, `@angular/*`) and scopes to matching packages only.
+
+## Phase 0 — Resume check
+
+Before doing anything else, check whether `.upgrade-deps-progress.md` exists
+in the working directory.
+
+**If it exists:**
+1. Read it.
+2. Find the first phase entry that is still `[ ]` (unchecked).
+3. If a phase is marked `[x]`, its output (e.g. detected languages, research
+   findings) should be recorded in the file under `## Saved State` — extract
+   and use those values instead of re-running that phase.
+4. Print: `Resuming from [phase name].`
+5. Jump directly to the first unchecked phase.
+
+**If it does not exist:** continue to Phase 1 as normal.
+
+---
 
 ## Phase 1 — Detect project languages and frameworks
 
@@ -50,6 +70,29 @@ If multiple manifests are found, build the full roster — all detected
 languages get an agent.
 
 Announce: "Detected languages: [list]. Agents: [list]."
+
+Write `.upgrade-deps-progress.md` (or update it if it exists):
+
+```
+# Upgrade-Deps Progress
+
+## Phases
+- [x] phase-1-detect-languages
+- [ ] phase-1b-ts-migration-scan
+- [ ] phase-2-research
+- [ ] phase-3-scope-evaluation
+- [ ] phase-3b-ts-migration-execution
+- [ ] phase-4-build-prompts
+- [ ] phase-5-execute-agents
+- [ ] phase-6-review-loop
+- [ ] phase-7-summary
+
+## Saved State
+detected_languages: <comma-separated list>
+```
+
+If Phase 1B does not apply (no TypeScript detected), mark `- [x] phase-1b-ts-migration-scan` immediately.
+If Phase 3B does not apply, mark `- [x] phase-3b-ts-migration-execution` immediately.
 
 ## Phase 1B — TypeScript migration scan (conditional)
 
@@ -108,6 +151,9 @@ before the manual `typescript-pro` agent pass.
 
 If no TS5 patterns are found, skip this and proceed normally.
 
+On success, mark `- [x] phase-1b-ts-migration-scan` in `.upgrade-deps-progress.md`.
+If Phase 1B was skipped (no TypeScript), it was already marked above.
+
 Regardless of whether TS5 patterns were found, if the project does
 not already run `tsgo --noEmit` or `--stableTypeOrdering` in CI,
 add a **Suggestion** to the final report:
@@ -115,6 +161,19 @@ add a **Suggestion** to the final report:
 > Consider adding `npx tsgo --noEmit` as a non-blocking CI job and
 > `--stableTypeOrdering` to your test script to detect TS7
 > incompatibilities before they become hard errors.
+
+### Monorepo conflict resolution
+
+If a workspace layout is detected (presence of `pnpm-workspace.yaml`, `lerna.json`,
+`nx.json`, or `workspaces` field in root `package.json`):
+
+1. Check for incompatible shared dependency versions across packages:
+   `pnpm ls --recursive --json 2>/dev/null | jq '[.[] | {name, version}]'` or equivalent
+2. If two packages require incompatible versions of the same dependency:
+   - Pin the shared dependency at the root `package.json` with a version satisfying both
+   - Document the pin in the PR description: "Pinned <package>@<version> at root to resolve
+     cross-workspace conflict between <pkg-a>@<req-a> and <pkg-b>@<req-b>"
+3. If no compatible version exists, flag the conflict and stop — do not auto-resolve
 
 ## Phase 2 — Research (parallel)
 
@@ -132,6 +191,19 @@ Both agents: prompt per `parallelism.md`, read-set = manifests +
 lockfiles, write-set = none.
 
 Wait for both agents to complete before proceeding.
+
+On success, append the dependency and security findings tables to `.upgrade-deps-progress.md`:
+
+```
+## Phase 2 Findings
+### Dependency audit
+<dependency table>
+
+### Security findings
+<security findings>
+```
+
+Then mark `- [x] phase-2-research` in `.upgrade-deps-progress.md`.
 
 ## Phase 3 — Scope evaluation
 
@@ -159,6 +231,8 @@ Tell the user:
 > via /plan-mission for structured execution."
 
 Then stop — plan-mission takes over.
+
+On success (direct-execution path), mark `- [x] phase-3-scope-evaluation` in `.upgrade-deps-progress.md`.
 
 ## Phase 3B — TypeScript migration execution (conditional)
 
@@ -193,6 +267,8 @@ Quality bar: tsc --noEmit must pass. All tests must pass.
 
 3. If `typescript-pro` reports failures it cannot fix, STOP and
    present the findings to the user before continuing.
+
+On success, mark `- [x] phase-3b-ts-migration-execution` in `.upgrade-deps-progress.md`.
 
 ## Phase 4 — Build language agent prompts
 
@@ -239,6 +315,8 @@ agents (e.g. a shared config importing both Python and TS packages),
 assign it to the agent whose language *defines* the dependency. Flag
 shared-boundary files explicitly in both prompts.
 
+On success, mark `- [x] phase-4-build-prompts` in `.upgrade-deps-progress.md`.
+
 ## Phase 5 — Execute language agents (parallel)
 
 Launch all language agents in parallel. Each owns its file set
@@ -250,12 +328,14 @@ code changes made, test results).
 If any agent reports test failures it could not fix, STOP and report
 to the user before continuing.
 
+On success, mark `- [x] phase-5-execute-agents` in `.upgrade-deps-progress.md`.
+
 ## Phase 6 — Review loop
 
 Run `code-reviewer` with a prompt scoped to the changed files:
 
 ```
-Context: Dependency upgrade review, iteration [N] of 6
+Context: Dependency upgrade review, iteration [N] of 4
 Changed files: [list from agent reports]
 Prior review findings: [findings from iteration N-1, if any]
 
@@ -270,6 +350,7 @@ Focus on:
 
 Output: APPROVE or a list of required changes with file:line.
 Mark each finding as NEW or RECURRING (appeared in a prior iteration).
+If a RECURRING finding has appeared 3+ times without resolution, stop and report it.
 ```
 
 **Loop logic:**
@@ -278,11 +359,13 @@ Mark each finding as NEW or RECURRING (appeared in a prior iteration).
   - Extract the list of required changes
   - Pass them back to the relevant language agent(s) for fixes
   - Re-run `code-reviewer` (increment N)
-- After 6 iterations without APPROVE:
+- After 4 iterations without APPROVE:
   - Identify any RECURRING findings (same issue appeared 2+ times)
   - Present to user: "The following items could not be resolved after
-    6 iterations. Please advise: [list with file:line and description]"
+    4 iterations. Please advise: [list with file:line and description]"
   - Stop and wait for user input
+
+On APPROVE, mark `- [x] phase-6-review-loop` in `.upgrade-deps-progress.md`.
 
 ## Phase 7 — Summary
 
@@ -299,3 +382,5 @@ chore(deps): upgrade all dependencies to latest stable
 
 [summary of major changes]
 ```
+
+On success, mark `- [x] phase-7-summary` in `.upgrade-deps-progress.md`.

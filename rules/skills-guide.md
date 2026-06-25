@@ -77,6 +77,7 @@ Skills are invoked via the Skill tool when users type `/skill-name`.
 |-------|-------------|
 | `/recount` | Updating recipe photo and GF status counts in RECIPE-STATUS.md and small-batch RECIPE-LIST.md. Run after adding/editing recipes or photos. |
 | `/build-cookbook` | Regenerating cookbook PDFs. Runs recount first, builds all (or specified) PDFs, commits. Args: `main`, `v2`, `compact`, `condensed`, `minimal`, `small-batch` (default: all). |
+| `/update-recipe-app` | Updating the recipe PWA after adding or changing recipe markdown files. Runs parse-recipes.py, runs tests, commits updated recipes-data.js. Run any time recipes are added, edited, or renamed. |
 
 ### Claude Code Environment
 

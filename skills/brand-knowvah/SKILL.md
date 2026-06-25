@@ -1,3 +1,10 @@
+---
+name: brand-knowvah
+description: Apply the Knowvah "Warm Studio" visual identity (CSS tokens, ThemeContext, sidebar layout, App.tsx skeleton) to a new React/Vite project on a *.knowvah.com subdomain.
+user-invocable: true
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep
+---
+
 # brand-knowvah
 
 Apply the Knowvah "Warm Studio" visual identity and app shell to a new
@@ -7,6 +14,23 @@ sidebar layout, and the App.tsx provider/routing skeleton.
 Run this skill after the project scaffold exists (Vite + React + TypeScript +
 Tailwind CSS v4 + React Router + i18next). Run `auth-setup` first if you want
 the sidebar's user profile section wired to a real session.
+
+---
+
+## Step 0 — Resume check
+
+Before doing anything else, check whether `.brand-knowvah-progress.md` exists
+in the working directory.
+
+**If it exists:**
+1. Read it.
+2. If `collected_inputs: true` is present, extract the stored inputs — do not
+   re-ask any question whose answer is already recorded.
+3. Find the first step checkbox that is still `[ ]` (unchecked).
+4. Print: `Resuming from [step name].`
+5. Skip Steps 1–2 entirely and jump directly to the first unchecked step.
+
+**If it does not exist:** continue to Step 1 as normal.
 
 ---
 
@@ -35,6 +59,34 @@ Ask these before doing any work:
 9. **Termly site UUID** (if compliance-setup was run) — the
    `data-website-uuid` value for the Termly embed script.
 
+After all questions are answered, write `.brand-knowvah-progress.md` in the
+working directory before doing any further work:
+
+```
+# Brand-Knowvah Progress
+collected_inputs: true
+
+## Inputs
+<record each collected input as a key: value line>
+
+## Steps
+- [ ] install-dependencies
+- [ ] copy-index-css
+- [ ] write-index-html
+- [ ] write-storage-ts
+- [ ] write-routes-ts
+- [ ] write-theme-context
+- [ ] write-topbar
+- [ ] write-layout
+- [ ] write-sidebar
+- [ ] copy-logo
+- [ ] write-app-tsx
+- [ ] wire-main-tsx
+- [ ] configure-tailwind
+- [ ] add-i18n-keys
+- [ ] verify
+```
+
 ---
 
 ## Step 2 — Install dependencies
@@ -50,6 +102,8 @@ npm install react-i18next i18next   # if i18n-setup was run
 npm install posthog-js              # if analytics-setup was run
 ```
 
+On success, mark `- [x] install-dependencies` in `.brand-knowvah-progress.md`.
+
 ---
 
 ## Step 3 — Copy and adapt `index.css`
@@ -63,6 +117,8 @@ The font is JetBrains Mono, loaded from Google Fonts in `index.html`. Do not
 add a `font-family` declaration to the CSS — Tailwind's base reset handles
 font inheritance from `body`.
 
+On success, mark `- [x] copy-index-css` in `.brand-knowvah-progress.md`.
+
 ---
 
 ## Step 4 — Write `ui/index.html`
@@ -75,6 +131,8 @@ Copy from `ui/index.html`. Adapt:
 - If **compliance-setup was NOT run**: remove the entire `<script>` block
   containing the Termly embed.
 
+On success, mark `- [x] write-index-html` in `.brand-knowvah-progress.md`.
+
 ---
 
 ## Step 5 — Write `src/constants/storage.ts`
@@ -83,6 +141,8 @@ Copy from `ui/constants_storage.ts`. Adapt:
 
 - Update the `LANG` value prefix to match this app's name if different from
   `knowvah`. E.g. `'myapp_lang'`.
+
+On success, mark `- [x] write-storage-ts` in `.brand-knowvah-progress.md`.
 
 ---
 
@@ -100,6 +160,8 @@ app's actual page structure (from step 1 Q6):
   ITEM: (id: string) => `/items/${id}` as const,
   ```
 
+On success, mark `- [x] write-routes-ts` in `.brand-knowvah-progress.md`.
+
 ---
 
 ## Step 7 — Write `src/contexts/ThemeContext.tsx`
@@ -116,11 +178,15 @@ Copy from `ui/ThemeContext.tsx`.
   ```
   Also remove the `import { useAuth } from './AuthContext';` line.
 
+On success, mark `- [x] write-theme-context` in `.brand-knowvah-progress.md`.
+
 ---
 
 ## Step 8 — Write `src/components/TopBar.tsx`
 
 Copy from `ui/TopBar.tsx`. No changes needed.
+
+On success, mark `- [x] write-topbar` in `.brand-knowvah-progress.md`.
 
 ---
 
@@ -132,6 +198,8 @@ Copy from `ui/Layout.tsx`. Adapt:
   conditional feedback link in the footer.
 - Update i18n namespace references if 'auth' and 'common' are named
   differently in this project.
+
+On success, mark `- [x] write-layout` in `.brand-knowvah-progress.md`.
 
 ---
 
@@ -151,12 +219,16 @@ Copy from `ui/Sidebar.tsx`. Adapt:
    type casts on `user.credits_available`, `user.is_admin`, `user.profile_url`
    to match the actual user type.
 
+On success, mark `- [x] write-sidebar` in `.brand-knowvah-progress.md`.
+
 ---
 
 ## Step 11 — Copy the Knowvah logo
 
 Copy `knowvah_logo.svg` from this skill's template directory to
 `ui/public/knowvah_logo.svg` in the new project.
+
+On success, mark `- [x] copy-logo` in `.brand-knowvah-progress.md`.
 
 ---
 
@@ -177,6 +249,8 @@ Copy from `ui/App.tsx`. Adapt:
    `<RequireAuth><Layout /></RequireAuth>` wrapper; authenticated routes go
    inside it.
 6. **Admin routes**: if step 1 Q8 = No, remove admin route entries.
+
+On success, mark `- [x] write-app-tsx` in `.brand-knowvah-progress.md`.
 
 ---
 
@@ -203,6 +277,8 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 );
 ```
 
+On success, mark `- [x] wire-main-tsx` in `.brand-knowvah-progress.md`.
+
 ---
 
 ## Step 14 — Configure Tailwind
@@ -210,6 +286,8 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 Ensure `tailwind.config.ts` (or `vite.config.ts` Tailwind plugin) includes
 the `ui/src/**` glob. No custom theme extension is needed — the design system
 runs entirely through CSS custom properties referenced as `bg-[var(--bg)]` etc.
+
+On success, mark `- [x] configure-tailwind` in `.brand-knowvah-progress.md`.
 
 ---
 
@@ -255,16 +333,25 @@ If i18n-setup was run, add the sidebar and footer translation keys to the
 Run `npm run i18n:translate` (if the translate script exists) to populate the
 other 17 locales.
 
+On success, mark `- [x] add-i18n-keys` in `.brand-knowvah-progress.md`.
+
 ---
 
 ## Step 16 — Verify
 
+**Failure policy: if `npx tsc --noEmit` fails, stop immediately and report the
+full error output. Do not continue. The user must resolve type errors and
+re-run (Step 0 will resume from this step).**
+
+0. Run `npx tsc --noEmit` — fix any type errors before proceeding.
 1. Run `npm run dev` — the app should load with the warm cream background and
    dark charcoal sidebar.
 2. Toggle OS dark mode — theme should switch immediately.
 3. Collapse/expand the sidebar — state should persist across page refresh.
 4. Resize to mobile — sidebar should be hidden, hamburger button visible.
 5. Click the hamburger — drawer should slide in with overlay.
+
+On success, mark `- [x] verify` in `.brand-knowvah-progress.md`.
 
 ---
 

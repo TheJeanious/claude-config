@@ -1,8 +1,40 @@
+---
+name: auth-setup
+description: Scaffold OAuth authentication (LinkedIn, Google, Microsoft) into a Cloudflare Workers + Neon PostgreSQL + React/Vite project using KV-backed sessions and HMAC-signed stateless OAuth state.
+user-invocable: true
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebFetch, WebSearch
+---
+
 # /auth-setup
+
+Model routing: Sonnet for implementation; Haiku for verification/scoring; Opus only for explicit architectural decisions.
 
 Scaffold OAuth authentication (LinkedIn, Google, Microsoft) into a
 Cloudflare Workers + Neon PostgreSQL + React/Vite project. Uses KV-backed
 sessions and HMAC-signed stateless OAuth state.
+
+---
+
+## Step 0 — Resume check
+
+Before doing anything else, check whether `.auth-setup-progress.md` exists in
+the working directory.
+
+**If it exists:**
+1. Read it.
+2. If `collected_inputs: true` is present, extract the stored inputs — do not
+   re-ask any question whose answer is already recorded.
+3. Find the first step checkbox that is still `[ ]` (unchecked).
+4. Print: `Resuming from [step name].`
+5. Skip Step 1 entirely and jump directly to the first unchecked step.
+
+**If it does not exist:** continue to Step 1 as normal.
+
+**Step execution policy (applies to Steps 1b–15):**
+After completing each step, mark its checkbox `[x]` in
+`.auth-setup-progress.md`. If a step's verify check fails, stop and report the
+full error — do not continue to the next step. The user must resolve the issue
+and resume (Step 0 will pick up from the first unchecked step on the next run).
 
 ---
 
@@ -25,6 +57,51 @@ proceed. Do not interleave questions with implementation.
    interface?** If yes, we merge fields. If no, we create them.
 7. **Does your `src/constants.ts` already exist?** If yes, we append. If no,
    we create it.
+
+After all questions are answered, write `.auth-setup-progress.md` in the
+working directory before doing any implementation work:
+
+```
+# Auth Setup Progress
+collected_inputs: true
+
+## Inputs
+<record each collected input as a key: value line>
+
+## Steps
+- [ ] verify-oauth-docs
+- [ ] read-templates
+- [ ] database-migration
+- [ ] constants
+- [ ] types
+- [ ] oauth-utils
+- [ ] auth-middleware
+- [ ] auth-routes
+- [ ] register-routes
+- [ ] api-me
+- [ ] frontend-components
+- [ ] wire-authprovider
+- [ ] i18n-keys
+- [ ] env-vars-kv
+- [ ] write-tests
+- [ ] verify
+```
+
+---
+
+## Step 1b — Verify OAuth provider endpoints/scopes against current docs
+
+OAuth authorization/token endpoints and scope names drift. Before templating
+provider-specific code, WebFetch the current docs for each provider chosen in
+Step 1 and confirm the authorize URL, token URL, userinfo endpoint, and scope
+strings the templates use:
+
+- Google — https://developers.google.com/identity/protocols/oauth2/web-server
+- Microsoft — https://learn.microsoft.com/entra/identity-platform/v2-oauth2-auth-code-flow
+- LinkedIn — https://learn.microsoft.com/linkedin/shared/authentication/authorization-code-flow
+
+If an endpoint or scope has changed (e.g. LinkedIn's `w_member_social`,
+Microsoft tenant path), update the templated values before relying on them.
 
 ---
 
@@ -312,8 +389,16 @@ Also add `http://localhost:8787/auth/<provider>/callback` for local dev.
 
 ---
 
+## Step 14b — Write tests
+
+Write at minimum:
+- **Happy-path test**: call `GET /api/me` with a valid session token — assert 200 and expected user fields.
+- **Rejection test**: call `GET /api/me` with no session — assert 401 redirect to `/login`.
+- **Protected route test**: access a protected route without session — assert redirect with `returnTo` param.
+
 ## Step 15 — Verify
 
+0. Run `npx tsc --noEmit` — fix any type errors before proceeding.
 1. Run the dev server: `npm run dev` (or `npx wrangler dev`)
 2. Navigate to `/login` — confirm the correct provider buttons appear.
 3. Click a provider button — confirm redirect to the OAuth consent screen.
@@ -322,6 +407,23 @@ Also add `http://localhost:8787/auth/<provider>/callback` for local dev.
 6. Click sign out — confirm redirect to `/` and session cookie is cleared.
 7. Attempt to access a protected route without a session — confirm redirect
    to `/login?returnTo=<path>`.
+
+---
+
+## Operational Readiness
+
+**SLIs to define before going live:**
+- Login success rate: % of OAuth callback attempts that result in a valid session (target: >99%)
+- Session validation latency p95: time for `requireAuth` to resolve from KV (target: <50ms)
+- OAuth callback error rate: % of `/auth/<provider>/callback` requests that return an error (target: <0.1%)
+- Token refresh failure rate: % of token refresh attempts that fail (target: <0.5%)
+
+**Key failure modes:**
+- KV/session store unavailable → all authenticated requests fail; detected by session validation error rate spike; mitigation: circuit-breaker to a read-only degraded state, surface a login-unavailable page rather than a 500
+- OAuth provider outage → login flow broken; detected by OAuth callback error rate exceeding 1%; mitigation: show "Login temporarily unavailable, try again shortly" — do not expose provider error details to the user
+- Token signing key misconfiguration → all JWTs rejected immediately after deploy; detected by auth failure rate spiking post-deploy; mitigation: validate key presence and format in the startup health check before accepting traffic
+
+**Rollback classification:** Reversible — auth config changes (secrets, KV bindings, provider toggles) can be reverted; session data is not migrated by auth-setup, so no data migration is required to roll back.
 
 ---
 

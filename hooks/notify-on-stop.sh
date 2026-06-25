@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 # Chimes when Claude finishes, but only if the turn took longer than 30 seconds.
 THRESHOLD=30
 START_FILE="$HOME/.claude/.runtime/claude-turn-start"
@@ -24,5 +24,7 @@ if [[ $ELAPSED -ge $THRESHOLD ]]; then
     fi
     if [[ "$OSTYPE" == "darwin"* ]]; then
         osascript -e "display notification \"Claude Code finished (${DURATION})\" with title \"Claude Code\" sound name \"Glass\""
+    elif command -v notify-send &>/dev/null; then
+        notify-send "Claude Code" "Claude Code finished (${DURATION})"
     fi
 fi

@@ -5,8 +5,27 @@ user-invocable: true
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
+Model routing: Sonnet for implementation; Haiku for verification/scoring; Opus only for explicit architectural decisions.
+
 Scaffold full GDPR + CRA compliance features into this project. Templates live at
 `~/.claude/skills/compliance-setup/`. Work through each step in order.
+
+---
+
+## Step 0 — Resume check
+
+Before doing anything else, check whether `.compliance-setup-progress.md` exists
+in the working directory.
+
+**If it exists:**
+1. Read it.
+2. If `collected_inputs: true` is present, extract the stored inputs — do not
+   re-ask any question whose answer is already recorded.
+3. Find the first step checkbox that is still `[ ]` (unchecked).
+4. Print: `Resuming from [step name].`
+5. Skip Steps 1–2 entirely and jump directly to the first unchecked step.
+
+**If it does not exist:** continue to Step 1 as normal.
 
 ---
 
@@ -25,6 +44,26 @@ Ask the user for all of the following before writing any files:
 | `CANNY_APP_ID` | Canny app ID (optional — skip if not using Canny) | `abc123` or blank |
 | `CANNY_URL` | Canny public board URL (optional) | `https://feedback.myapp.com` |
 | `R2_SBOM_PREFIX` | R2 path prefix for SBOM files | `sbom/latest` |
+
+After all inputs are collected, write `.compliance-setup-progress.md` in the
+working directory before doing any further work:
+
+```
+# Compliance-Setup Progress
+collected_inputs: true
+
+## Inputs
+<record each collected input as a key: value line>
+
+## Steps
+- [ ] migrations
+- [ ] backend-routes
+- [ ] frontend-components
+- [ ] i18n-keys
+- [ ] ci-jobs
+- [ ] write-tests
+- [ ] verify
+```
 
 ---
 
@@ -48,6 +87,8 @@ the correct prefix. Do not modify the SQL — it is already idempotent.
 
 If these columns/tables already exist in `src/db/schema.sql`, skip the corresponding
 migration and note it.
+
+On success, mark `- [x] migrations` in `.compliance-setup-progress.md`.
 
 ---
 
@@ -96,6 +137,11 @@ Apply substitutions:
 
 ### 3e. Register routes
 
+// IRREVERSIBLE: the DELETE /api/me route triggers permanent account deletion.
+// Once executed, user data cannot be recovered (recovery window: 30 days via backup).
+// Require explicit user acknowledgement in the UI before calling this endpoint.
+// Log deletion events with timestamp and hashed user ID for audit trail.
+
 Add these entries to the fetch handler in `src/index.ts` (adapt to the project's
 routing pattern):
 
@@ -123,6 +169,8 @@ WHERE deleted_at IS NOT NULL
 ```
 
 Also delete the R2 backup object for each expired user before removing the row.
+
+On success, mark `- [x] backend-routes` in `.compliance-setup-progress.md`.
 
 ---
 
@@ -226,6 +274,8 @@ bucket_name = "your-user-backups-bucket"
 Also add the `consent_required` flag to the `/api/me` response — return
 `consent_required: user.terms_accepted_at === null` alongside the existing user fields.
 
+On success, mark `- [x] frontend-components` in `.compliance-setup-progress.md`.
+
 ---
 
 ## Step 5 — i18n keys
@@ -241,6 +291,8 @@ Read `~/.claude/skills/compliance-setup/i18n/en_auth_consent.json` and
    - For RTL languages (Arabic `ar`, Urdu `ur`), check the existing file's
      encoding style (some store non-ASCII as `\uXXXX`) and match it.
 3. Do not overwrite existing keys — only add the missing ones.
+
+On success, mark `- [x] i18n-keys` in `.compliance-setup-progress.md`.
 
 ---
 
@@ -261,15 +313,49 @@ For the i18n-audit job:
 - Confirm `npm run i18n:check` exists in `ui/package.json`. If it doesn't, note
   this to the user and skip that job — they'll need to add the script first.
 
+On success, mark `- [x] ci-jobs` in `.compliance-setup-progress.md`.
+
 ---
+
+## Step 6b — Write tests
+
+Write at minimum:
+- **Consent gate test**: call a data endpoint without consent cookie — assert the appropriate gate response.
+- **Data export test**: call `GET /api/me/export` — assert the response contains expected user fields.
+- **Account deletion test**: call `DELETE /api/me` — assert the account is marked inactive and data is cleared.
+
+On success, mark `- [x] write-tests` in `.compliance-setup-progress.md`.
 
 ## Step 7 — Verify
 
-1. Run `npm run build` (or equivalent) and confirm TypeScript compiles cleanly.
-2. If compliance test files exist (`test/me.test.ts`, `test/feedback.test.ts`,
+**Failure policy: if `npx tsc --noEmit` or `npm run build` fails, stop immediately
+and report the full error output. Do not continue. The user must resolve the issue
+and re-run (Step 0 will resume from this step).**
+
+1. Run `npx tsc --noEmit` — fix any type errors before proceeding.
+2. Run `npm run build` (or equivalent) and confirm TypeScript compiles cleanly.
+3. If compliance test files exist (`test/me.test.ts`, `test/feedback.test.ts`,
    `test/sbom.test.ts`), run them.
-3. Summarise:
+4. Summarise:
    - What was created
    - What ADAPT comments remain and need manual attention
    - What env vars / secrets need to be set before the feature is live
    - Whether the i18n:check script is missing (action required)
+
+On success, mark `- [x] verify` in `.compliance-setup-progress.md`.
+
+---
+
+## Operational Readiness
+
+**SLI examples:**
+- Consent endpoint success rate: % of POST /api/me/consent calls returning 2xx
+- Data export delivery rate: % of export requests where R2 URL is returned within 60s
+- Account deletion processing rate: % of scheduled cleanup jobs completing without error
+
+**Key failure modes:**
+- R2 presigned URL generation fails → export hangs; detected by export request timeout rate; mitigation: check R2 bucket permissions and CORS config
+- SBOM generation cron fails → requests never fulfilled; detected by sbom_requests rows stuck in pending state > 24h; mitigation: check cron binding in wrangler.toml
+- Consent flag not persisted → users re-prompted on every session; detected by repeated consent events per user; mitigation: verify DB write in handlePostConsent
+
+**Rollback classification:** Mixed — consent/export/feedback routes are reversible. Account deletion (Step 3f) is irreversible once executed — deleted user data cannot be recovered. See IRREVERSIBLE note at Step 3e.

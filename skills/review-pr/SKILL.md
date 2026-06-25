@@ -9,15 +9,43 @@ description: >
 disable-model-invocation: false
 ---
 
+Model routing: Sonnet for implementation; Haiku for verification/scoring; Opus only for explicit architectural decisions.
+
 # Review PR
 
 Run a full code review on a GitHub PR and post the findings as inline
 comments, ready for the human to review and submit.
 
+## Model Routing
+
+Delegates to `/code-review` for the review phase — see that skill's model routing table.
+Phase 4 (diff position mapping) runs inline. Phase 5 (posting comments) uses `gh` CLI.
+
+| Phase | Task | Model |
+|-------|------|-------|
+| Phase 3 — Code review | Delegates to `/code-review` | Sonnet + Haiku per that skill |
+| Phase 4 — Position mapping | Mechanical mapping | Inline (no sub-agent) |
+
 **Input:** `$ARGUMENTS` — a GitHub PR URL (e.g.
 `https://github.com/org/repo/pull/123`) or a bare PR number.
 If empty, run `gh pr view --json url` on the current branch and use
 that PR.
+
+---
+
+## Phase 0 — Resume check
+
+Before doing anything else, check whether `/tmp/review-pr-findings.md`
+exists.
+
+**If it exists:**
+1. Read it.
+2. Print: `Resuming: Phase 3 findings loaded from /tmp/review-pr-findings.md`
+3. Skip Phases 1, 2, and 3 entirely. Use the findings in that file as
+   the input to Phase 4 (position mapping). The file must also contain
+   `owner`, `repo`, `number`, and `head_sha` values — read those too.
+
+**If it does not exist:** continue to Phase 1 as normal.
 
 ---
 
@@ -74,6 +102,23 @@ Two modifications apply when running from this skill:
    PR-level issue comment (not a review comment) at the end, so they
    appear in the conversation thread without creating resolvable
    threads. If there are no Positive findings, skip this comment.
+
+---
+
+## Save findings checkpoint (after Phase 3 completes)
+
+Before position mapping, save all findings plus the PR identifiers to
+`/tmp/review-pr-findings.md`. This allows a resumed run (Phase 0) to
+skip Phases 1–3 without re-running the code review.
+
+```
+owner: <value>
+repo: <value>
+number: <value>
+head_sha: <value>
+
+<all Phase 3 findings>
+```
 
 ---
 
@@ -186,5 +231,9 @@ publish it.
 - If the PR has no changed files or the diff is empty, stop and report.
 - If `gh` is not authenticated, stop and tell the user to run
   `gh auth login`.
+- On a transient `gh`/network failure (5xx, connection refused, read
+  timeout), retry per `~/.claude/rules/retry-idempotency.md` (max 3
+  attempts, exponential backoff) before aborting. Do **not** retry on
+  4xx (404 missing PR, 403 auth) except 429 — honor `Retry-After`.
 - Post all inline comments in a **single** review API call (not one
   call per comment) to avoid spamming the PR timeline.

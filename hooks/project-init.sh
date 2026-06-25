@@ -3,8 +3,9 @@
 # Runs as an async UserPromptSubmit hook; all operations are idempotent.
 
 set -euo pipefail
+mkdir -p ~/.claude/logs
 # Fail-safe: setup errors must never block the user's prompt.
-trap 'exit 0' ERR
+trap 'echo "[project-init] error at line $LINENO — see ~/.claude/logs/project-init.err" >> ~/.claude/logs/project-init.err 2>/dev/null; exit 0' ERR
 
 PROJECT_DIR="$(pwd)"
 
@@ -21,16 +22,10 @@ fi
 
 # ── 2. .mcp.json ──────────────────────────────────────────────────────────────
 SERENA_DIR="${SERENA_HOME:-$HOME/git/serena}"
-# Code review: Mem0 URL is hardcoded to localhost:8765.
-# Revisit if MEM0_URL env var should be used for configurability.
 if [ ! -f "$PROJECT_DIR/.mcp.json" ]; then
   cat > "$PROJECT_DIR/.mcp.json" << EOF
 {
   "mcpServers": {
-    "mem0": {
-      "type": "sse",
-      "url": "http://localhost:8765/mcp/claude-code/sse/default"
-    },
     "serena": {
       "command": "uv",
       "args": [

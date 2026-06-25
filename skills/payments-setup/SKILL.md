@@ -1,4 +1,13 @@
+---
+name: payments-setup
+description: Scaffold Stripe Checkout, session pack credits, idempotent webhook handling, and an admin coupon management system into a Cloudflare Workers + Neon PostgreSQL + React/Vite project.
+user-invocable: true
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebFetch, WebSearch
+---
+
 # /payments-setup
+
+Model routing: Sonnet for implementation; Haiku for verification/scoring; Opus only for explicit architectural decisions.
 
 Scaffold Stripe Checkout + coupon system into a Cloudflare Workers + Neon
 PostgreSQL + React/Vite project. Implements: session packs (pre-paid credits),
@@ -7,6 +16,30 @@ restriction, and admin coupon management UI.
 
 The billing unit is the **pack**, not the individual session. Packs are
 purchased upfront and never expire.
+
+---
+
+## Step 0 — Resume check
+
+Before doing anything else, check whether `.payments-setup-progress.md` exists
+in the working directory.
+
+**If it exists:**
+1. Read it.
+2. If `collected_inputs: true` is present, extract the stored inputs — do not
+   re-ask any question whose answer is already recorded.
+3. Find the first step checkbox that is still `[ ]` (unchecked).
+4. Print: `Resuming from [step name].`
+5. Skip Steps 1 entirely and jump directly to the first unchecked step.
+
+**If it does not exist:** continue to Step 1 as normal.
+
+**Step execution policy (applies to Steps 2–16):**
+After completing each step, mark its checkbox `[x]` in
+`.payments-setup-progress.md`. If a step's verify check fails, stop and report
+the full error — do not continue to the next step. The user must resolve the
+issue and resume (Step 0 will pick up from the first unchecked step on the next
+run).
 
 ---
 
@@ -33,6 +66,36 @@ Ask all of the following before doing any work:
 7. **`APP_URL` env var** — already set by `/auth-setup` if that skill was run.
    Confirm it exists or note it needs to be added.
 
+After all questions are answered, write `.payments-setup-progress.md` in the
+working directory before doing any implementation work:
+
+```
+# Payments Setup Progress
+collected_inputs: true
+
+## Inputs
+<record each collected input as a key: value line>
+
+## Steps
+- [ ] install-stripe-sdk
+- [ ] verify-stripe-docs
+- [ ] read-templates
+- [ ] database-migrations
+- [ ] constants
+- [ ] types
+- [ ] code-generation-utility
+- [ ] payment-routes
+- [ ] coupon-routes
+- [ ] register-routes
+- [ ] api-client
+- [ ] frontend-buy-redeem
+- [ ] frontend-admin-coupon-pages
+- [ ] i18n-keys
+- [ ] env-vars-wrangler
+- [ ] write-tests
+- [ ] verify
+```
+
 ---
 
 ## Step 2 — Install the Stripe SDK
@@ -43,6 +106,24 @@ npm install stripe
 
 Verify the installed version and update `STRIPE_API_VERSION` in constants
 to match (check `node_modules/stripe/package.json` → `"apiVersion"`).
+
+---
+
+## Step 2b — Verify the Stripe API surface against current docs
+
+Before relying on the templated Stripe surface, confirm it has not drifted.
+WebFetch the current Stripe docs and check the shapes the templates depend on:
+
+- Checkout Sessions create params and the `success_url`/`cancel_url` behavior
+  — https://docs.stripe.com/api/checkout/sessions/create
+- The `checkout.session.completed` event payload the webhook parses
+  — https://docs.stripe.com/api/events/types#event_types-checkout.session.completed
+- The pinned `STRIPE_API_VERSION` is still current/supported
+  — https://docs.stripe.com/api/versioning
+
+If any field name, event name, or required param the templates use has changed,
+adapt the templated code (and note the change) before continuing. Do not edit
+the resume/idempotency logic.
 
 ---
 
@@ -349,8 +430,16 @@ STRIPE_BASE_URL=http://localhost:12111 npx wrangler dev
 
 ---
 
+## Step 15b — Write tests
+
+Write at minimum:
+- **Happy-path test**: simulate a `checkout.session.completed` webhook — assert `session_packs` row created.
+- **Idempotency test**: send the same webhook event twice — assert only one `session_packs` row exists (ON CONFLICT DO NOTHING).
+- **Auth rejection test**: call a payment endpoint without a session — assert 401.
+
 ## Step 16 — Verify
 
+0. Run `npx tsc --noEmit` — fix any type errors before proceeding.
 1. **Buy flow**: Navigate to the buy section → click a pack → confirm redirect
    to Stripe Checkout → complete payment → confirm redirect to success URL →
    verify `session_packs` row created in DB.
@@ -366,6 +455,22 @@ STRIPE_BASE_URL=http://localhost:12111 npx wrangler dev
    coupon list renders → click a coupon → confirm detail page shows redemptions.
 7. **Non-admin guard**: Navigate to `/admin/coupons` as a regular user →
    confirm redirect or 403.
+
+---
+
+## Operational Readiness
+
+**SLI examples:**
+- Checkout session creation rate and error rate (Stripe API calls per minute, % failures)
+- Webhook processing success rate: % of Stripe webhook events acknowledged with 200
+- Pack activation latency: p95 time from webhook receipt to DB row confirmed
+
+**Key failure modes:**
+- Stripe webhook delivery fails → packs never activated; detected by webhook error rate in Stripe dashboard; mitigation: check webhook endpoint health, verify signing secret
+- Duplicate webhook → double-activation; detected by duplicate session_packs rows; mitigation: ON CONFLICT DO NOTHING already implemented — check idempotency key scope
+- DB write fails after Stripe charge → user charged but no pack; detected by mismatched Stripe payments vs session_packs count; mitigation: replay webhook from Stripe dashboard
+
+**Rollback classification:** Reversible with migration — removing Stripe integration requires disabling payment routes; existing session_packs rows are inert but harmless if left.
 
 ---
 

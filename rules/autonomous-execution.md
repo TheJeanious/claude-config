@@ -42,17 +42,9 @@ load the entire plan directory into context at once.
 
 ## After Every Compaction
 
-Context compaction erases nuance. After compaction:
-
-1. Re-read `README.md` from the brief directory (do not trust
-   summarized context)
-2. Re-read `decision-journal.md`
-3. Check which tasks are marked `[x]` vs `[ ]`
-4. Read the current batch's `overview.md`
-5. Resume from the first incomplete task
-
-This is non-negotiable. The brief on disk is the source of truth,
-not the compacted summary.
+Same as the Startup Sequence above, but re-read every file from disk —
+do not trust the compacted summary. This is non-negotiable: the brief on
+disk is the source of truth.
 
 ## Executing a Batch
 
@@ -132,20 +124,18 @@ Quality Gates:
 
 - Any push-forward condition listed in the mission brief applies
 - The choice is purely stylistic and doesn't affect behavior
-<!-- Code review: "task is simpler than estimated" could mask missing
-     context. Revisit: require a decision-journal entry before applying
-     this rule. -->
 - A task is simpler than estimated and can be done in fewer steps
+  *(log a decision-journal entry explaining why before proceeding)*
 - An error message is self-explanatory and the fix is obvious
 - A dependency needs a minor/patch version bump
 
 ### Consecutive-fix stop rule
 
-If you have attempted the same failing fix 3 or more consecutive times and the
-problem persists, **stop**. Three consecutive failures on the same issue signal
-an architectural or design problem that cannot be resolved by iterating on the
-same approach. Document the failure in the decision journal with the full error
-output and wait for human input.
+If the same code location or approach has been changed 3 or more times
+consecutively without resolving the same failing check, **stop**. Three
+consecutive failures signal an architectural or design problem that cannot be
+resolved by iterating on the same approach. Document the failure in the
+decision journal with the full error output and wait for human input.
 
 ### Always log the decision either way
 
@@ -155,6 +145,8 @@ differently, log it.
 
 ## Commit Discipline
 
+- Commit message format: see `~/.claude/rules/commits.md`. The conventions
+  below are the autonomous-specific additions to that spec.
 - One commit per completed task (not per file, not per batch)
 - Commit message references the task ID: `feat(T3): add confirm
   endpoint`
@@ -163,6 +155,9 @@ differently, log it.
 - If a quality gate fix requires changes to an already-committed
   task, create a `fix` commit referencing the task:
   `fix(T3): resolve lint errors in confirm endpoint`
+- Mission-brief branches use **merge commits** (not squash) when
+  merging to main — squash destroys per-task commit IDs referenced
+  throughout the decision journal and brief.
 
 ## Progress Tracking
 

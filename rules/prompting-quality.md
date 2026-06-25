@@ -2,27 +2,20 @@
 
 ## Constraint keywords
 
-Prompts without explicit constraints produce lower-quality output. Every
-non-trivial request should include at least one constraint keyword:
-
-- **Scope limiters**: "only", "limit to", "restrict to", "just"
-- **Prohibitions**: "do not", "avoid", "never", "without"
-- **Requirements**: "must", "always", "ensure", "require"
-- **Format controls**: "in under N lines", "as a table", "no prose"
-
-Constraint-free prompts invite scope creep, unnecessary refactoring, and
-outputs that are technically correct but not what was wanted.
+Use at least one constraint keyword per non-trivial request:
+- Scope: "only", "limit to", "restrict to", "just"
+- Prohibitions: "do not", "avoid", "never", "without"
+- Requirements: "must", "always", "ensure", "require"
+- Format: "in under N lines", "as a table", "no prose"
 
 Examples:
 - Weak: "Update the auth handler"
 - Strong: "Update the auth handler to accept Bearer tokens — do not change
   the session logic or touch any other handler"
 
-## Specificity
+> **On Claude 4.6+/Opus 4.8:** Prefer scoping keywords (`only`, `limit to`, `do not`) over intensity escalation (`CRITICAL`, `MUST`, `ALWAYS`). Blanket intensity words can overtrigger on these models and reduce output quality. Scoping keywords remain effective on all model tiers.
 
-Prompts under ~40 characters almost never contain enough information for
-non-trivial work. Before sending a short prompt, ask: does the AI have
-enough context to make the right trade-offs without guessing?
+## Specificity
 
 Include in the prompt:
 - The file or symbol being changed (if known)
@@ -39,6 +32,12 @@ Audit periodically: remove instructions that are no longer relevant,
 consolidate duplicates, and move project-specific rules to project-level
 CLAUDE.md files rather than the global one.
 
+Per-file caps bound each file, but nothing caps the **aggregate resident
+footprint** of `rules/` (~62KB). Rules are referenced by pointer from
+CLAUDE.md, not `@`-imported, so they are not all resident — keep it that
+way: prefer task-scoped reading of the one or two relevant rule files over
+loading the set, and dedup cross-file repetition rather than restating it.
+
 ## File context discipline
 
 Attaching large numbers of files to a prompt is a lazy substitute for
@@ -49,6 +48,15 @@ understanding the codebase. Prefer:
 
 Attaching 30+ files to a single prompt floods the context window, reduces
 cache hit rates, and makes it harder for the model to attend to what matters.
+
+## Agent context budget
+
+Research (arxiv:2509.21361) demonstrates attention dilution as a general principle
+with added context. Apply this when constructing agent prompts:
+
+- Cap file inventory at 20-30 files per agent; split larger inventories across multiple agents
+- Pass line ranges, not whole files: `src/api/subscribe.js:15-40` not the full file
+- If the read-set exceeds 30 files, that is a signal to split the task into two agents
 
 ## Constraint budget
 
@@ -82,6 +90,22 @@ In agent prompts and skill phases that require complete coverage — security
 audits, architecture reviews, test plans — use Tier 1 verbs. Reserve Tier 2
 for standard implementation guidance. Never use Tier 3 when you need the
 result acted on.
+
+## Scale-aware brevity constraints
+
+Per arxiv:2604.00025 (Hakim, 2026 — preprint): brevity constraints yield up to
+26pp accuracy gain on math/science benchmarks across 31 general LLMs (preprint,
+not validated on planning tasks or Opus-tier agents specifically). Opus-tier
+models over-elaborate without explicit constraint.
+
+- Every Opus agent prompt must include: "Return only the structured result —
+  no preamble, no trailing summary."
+- Specify output shape explicitly (bullet list, table, schema). "Report findings"
+  is weaker than "Report as a bullet list, one line per finding, no prose."
+- Replace "explain X" / "summarize Y" with "state X" / "list Y" in rules and phases.
+
+**Exception:** when reasoning trace is the deliverable (architecture proposals,
+extended thinking tasks) — verbosity is appropriate there.
 
 ## Session work-type boundaries
 

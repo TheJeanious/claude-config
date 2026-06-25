@@ -1,4 +1,13 @@
+---
+name: testing-setup
+description: Scaffold Vitest with the Cloudflare Workers pool, Istanbul coverage, ESLint, Prettier, husky pre-commit hooks, shared test helpers, Docker Compose for local services, and a GitHub Actions CI workflow into a Cloudflare Workers + Neon + React/Vite project.
+user-invocable: true
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep
+---
+
 # /testing-setup
+
+Model routing: Sonnet for implementation; Haiku for verification/scoring; Opus only for explicit architectural decisions.
 
 Scaffold testing infrastructure into a Cloudflare Workers + Neon PostgreSQL +
 React/Vite project. Installs Vitest with the Workers pool, 80/80/80 coverage
@@ -6,6 +15,23 @@ thresholds, Istanbul coverage (v8 is incompatible with Workerd), ESLint with
 TypeScript and React Hooks rules, Prettier, husky pre-commit hooks, shared
 test helpers with fixture builders, Docker Compose for local services, and a
 GitHub Actions CI workflow.
+
+---
+
+## Step 0 — Resume check
+
+Before doing anything else, check whether `.testing-setup-progress.md` exists
+in the working directory.
+
+**If it exists:**
+1. Read it.
+2. If `collected_inputs: true` is present, extract the stored inputs — do not
+   re-ask any question whose answer is already recorded.
+3. Find the first step checkbox that is still `[ ]` (unchecked).
+4. Print: `Resuming from [step name].`
+5. Skip Steps 1–2 entirely and jump directly to the first unchecked step.
+
+**If it does not exist:** continue to Step 1 as normal.
 
 ---
 
@@ -37,6 +63,29 @@ Ask all of the following before doing any work:
 9. **DB credentials for local dev** — used in Docker Compose, `globalSetup.ts`,
    and the `DATABASE_URL` default. (default: user=dev, password=devpass,
    db=myapp — confirm or change)
+
+After all questions are answered, write `.testing-setup-progress.md` in the
+working directory before doing any further work:
+
+```
+# Testing-Setup Progress
+collected_inputs: true
+
+## Inputs
+<record each collected input as a key: value line>
+
+## Steps
+- [ ] install-dependencies
+- [ ] vitest-config
+- [ ] global-test-setup
+- [ ] test-helpers
+- [ ] docker-compose
+- [ ] eslint
+- [ ] prettier-and-husky
+- [ ] package-json-scripts
+- [ ] github-actions-ci
+- [ ] bootstrap-test-file
+```
 
 ---
 
@@ -76,6 +125,8 @@ After installing, check if `@cloudflare/vitest-pool-workers` is already
 present — skip that package if so. Same for ESLint if an `eslint.config.*`
 already exists.
 
+On success, mark `- [x] install-dependencies` in `.testing-setup-progress.md`.
+
 ---
 
 ## Step 4 — Vitest config
@@ -93,6 +144,8 @@ adapting:
 - Remove the `STRIPE_BASE_URL` and Stripe bindings if step 1 Q2 was No.
 - Update the `DATABASE_URL` default to match the credentials from step 1 Q9.
 
+On success, mark `- [x] vitest-config` in `.testing-setup-progress.md`.
+
 ---
 
 ## Step 5 — Global test setup
@@ -105,6 +158,8 @@ Write `test/globalSetup.ts` from `test/globalSetup.ts`, adapting:
   doesn't have a `users` table.
 - Update the schema file path if it's not at `src/db/schema.sql`.
 - Update the migrations directory path if it's not `src/db/migrations`.
+
+On success, mark `- [x] global-test-setup` in `.testing-setup-progress.md`.
 
 ---
 
@@ -125,6 +180,8 @@ Write `test/helpers/db.ts` from `test/helpers/db.ts`, adapting:
   has not been run.
 - Add any additional fixture builders needed for the project's domain entities.
 
+On success, mark `- [x] test-helpers` in `.testing-setup-progress.md`.
+
 ---
 
 ## Step 7 — Docker Compose
@@ -138,6 +195,8 @@ root from `docker/docker-compose.yml`, adapting:
 
 If a `docker-compose.yml` already exists, merge the new services into it
 rather than replacing the file.
+
+On success, mark `- [x] docker-compose` in `.testing-setup-progress.md`.
 
 ---
 
@@ -154,6 +213,8 @@ adapting:
 
 If an `eslint.config.*` file already exists, merge the rules rather than
 replacing the file.
+
+On success, mark `- [x] eslint` in `.testing-setup-progress.md`.
 
 ---
 
@@ -192,6 +253,8 @@ npx lint-staged
 }
 ```
 
+On success, mark `- [x] prettier-and-husky` in `.testing-setup-progress.md`.
+
 ---
 
 ## Step 10 — package.json scripts
@@ -215,6 +278,8 @@ ADAPT:
 - If the project already has a `test` script, check whether it should be
   replaced or extended.
 
+On success, mark `- [x] package-json-scripts` in `.testing-setup-progress.md`.
+
 ---
 
 ## Step 11 — GitHub Actions CI workflow
@@ -230,6 +295,8 @@ Write `.github/workflows/ci.yml` from `github/ci.yml`, adapting:
 - Remove the `python-tests` job if step 1 Q5 was No. If Yes, update:
   - `working-directory` to the Python service path.
   - The pytest command if the test file names differ.
+
+On success, mark `- [x] github-actions-ci` in `.testing-setup-progress.md`.
 
 ---
 
@@ -260,16 +327,25 @@ ADAPT: update the route if `/health` is named differently. If the project
 has no health endpoint, write a simple test that verifies the Worker starts
 (e.g. `GET /` returns any response).
 
+On success, mark `- [x] bootstrap-test-file` in `.testing-setup-progress.md`.
+
 ---
 
 ## Step 13 — Verify
 
+**Failure policy: if any verify check fails, stop immediately and report the
+full error output. Do not continue to the next check or attempt a commit.
+The user must resolve the issue and re-run (Step 0 will resume from the last
+completed step).**
+
+0. Run `npx tsc --noEmit` — fix any type errors before proceeding.
 1. `npm run lint` — confirm no ESLint errors.
 2. `npm run format:check` — confirm no Prettier violations.
 3. `npm run test` — confirm vitest finds the test file, runs it, and passes.
 4. `npm run test:coverage` — confirm coverage report generates; if below
    80/80/80, note which files need tests (don't fail the setup).
-5. Commit the changes and push — confirm the CI workflow triggers and passes.
+5. Offer to commit the changes. Push only with explicit user approval — confirm
+   the CI workflow triggers and passes after push.
 
 ---
 

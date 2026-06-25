@@ -41,6 +41,7 @@ with all triggers and agent categories: `~/.claude/rules/skills-guide.md`.
 | Update recipe counts (photos, GF status) | `/recount` |
 | Regenerate Jeanius Kitchen cookbook PDFs | `/build-cookbook` |
 | Update recipe app after adding/changing recipes | `/update-recipe-app` |
+| Add a health journal entry | `/health-journal-entry` |
 
 ## Agents
 

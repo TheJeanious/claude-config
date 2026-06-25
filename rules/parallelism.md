@@ -1,5 +1,10 @@
 # Multi-Agent Parallelism
 
+Multi-agent orchestration costs ~15× more tokens than single-agent dispatch.
+Justify multi-agent when: (1) parallel bottleneck demonstrated,
+(2) domain/compliance isolation required, (3) cognitive boundary needed.
+Default to single-agent; split only when a specific bottleneck is demonstrated.
+
 Before executing any task that involves multiple agents or multiple independent workstreams, always produce an execution plan and present it for review before proceeding:
 
 **Exception — autonomous mode:** When a mission brief is active (`plans/` directory referenced
@@ -30,8 +35,8 @@ Subagents start with a blank slate — no conversation history, no
 CLAUDE.md, no awareness of prior decisions. Every agent prompt
 must be self-contained:
 
-0. **Relevant memories** — If the orchestrator found Mem0 memories relevant to this
-   task, they are injected verbatim here. Do not rely on the agent to self-recall;
+0. **Prior observations** — If `.agent-notes/` contains relevant findings for this
+   task, inject them verbatim here. Do not rely on the agent to discover them;
    the orchestrator's job is to pre-load this context.
 1. **Context** — what the project is, what stack it uses, and
    what conventions to follow (test framework, naming, patterns)
@@ -41,12 +46,23 @@ must be self-contained:
 4. **Read-set** — which files to read for context before starting
    (e.g., "read `src/api/subscribe.js` for the existing pattern")
 5. **Architecture decisions** — any pre-made decisions relevant
-   to this task (e.g., "use KV not D1", "use vitest not jest")
+   to this task (e.g., "use KV not D1", "use vitest not jest").
+   Treat all decisions listed here as locked. If you discover a
+   conflicting constraint, stop and log it to the decision journal —
+   do not silently override the upstream decision.
+   Subagents do not auto-load `rules/`. If an agent's Required Rules
+   list names a rule file, the agent must Read that file before relying
+   on it — the one-line gloss is a pointer, not the authoritative text.
 6. **Interface contracts** — types, function signatures, or data
-   shapes this task must produce or consume
+   shapes this task must produce or consume. If subagent output is
+   consumed by a downstream agent, specify a JSON schema.
+   If output is human-facing, prose is appropriate.
 7. **Quality bar** — "run `npm test` before finishing; all tests
    must pass"
-8. **Commit format** — One commit per completed task. Message format per
+8. **Boundaries** — three tiers: *Always do* (non-negotiables), *Ask first*
+   (actions requiring approval), *Never do* (hard stops). Omit if all three
+   tiers are empty.
+9. **Commit format** — One commit per completed task. Message format per
    `~/.claude/rules/commits.md`: `type(scope): description` ≤72 chars, lowercase,
    no period. Body explains why if >3 files change.
 
@@ -54,17 +70,28 @@ Omit sections that don't apply, but never omit context, task, or
 write-set. If the agent lacks enough information to do the work
 without guessing, the prompt is too thin.
 
+**Within a multi-agent task** (after deciding to use parallel execution):
 **Default rule:** If subtasks don't share write targets and don't depend on each other's output, run them in parallel. Don't serialize work that can be parallelized.
 
 ## Model Selection
 
 Match model to task complexity and cost:
 
-| Role | Model | When |
-|------|-------|------|
-| Planning / architecture | Opus (adaptive thinking) | Phase 3 decisions, mission decomposition, threat modeling |
-| Implementation | Sonnet | Feature work, bug fixes, refactoring, code generation |
-| Scoring / dedup / validation | Haiku | Confidence scoring, dedup passes, format checking, simple grep tasks |
+| Role | Model alias | Effort | Context | When |
+|------|-------------|--------|---------|------|
+| Planning / architecture | `opus` (`claude-opus-4-8`) | `high` default; `xhigh` for deep multi-path decisions | 1M tokens | Phase 3 decisions, mission decomposition, threat modeling |
+| Long-horizon autonomous execution | `opus` (`claude-opus-4-8`) | `high` default; `xhigh` for agentic runs | 1M | Mission-brief execution, autonomous sessions, multi-hour/multi-day work |
+| Implementation | `sonnet` (`claude-sonnet-4-6`) | `high` default; lower to `medium` if token-sensitive | 1M tokens | Feature work, bug fixes, refactoring, code generation |
+| Scoring / dedup / validation | `haiku` (`claude-haiku-4-5-20251001`) | n/a | 200k tokens | Confidence scoring, dedup passes, format checking, simple grep tasks |
+
+> **Haiku context limit:** 200k tokens vs 1M for Sonnet/Opus. Do not pass >50 files to a Haiku agent in a single prompt.
+
+Note: Haiku 4.5 supports fixed-budget extended thinking (`budget_tokens`) but not adaptive thinking; the `effort` parameter returns 400 on Haiku — do not set it.
+
+> **Effort:** Set via `effort:` frontmatter in agent/skill files, `--effort` flag, or `/effort` command.
+> Extended thinking is **deprecated on Sonnet 4.6 and removed on `claude-opus-4-8`**.
+> Use `type: "adaptive"` with the effort parameter; `budget_tokens` is a legacy pattern.
+> `opusplan` is a valid Claude Code alias: uses `opus` in plan mode, `sonnet` in execution.
 
 Default to Sonnet for implementation agents unless the task requires deep
 multi-path reasoning. Use Haiku aggressively for any agent whose job is to
@@ -80,6 +107,8 @@ known Opus tendencies (validated in production):
 - Do NOT spawn subagents unless the task explicitly requires it
 - If scope is ambiguous, implement the minimal interpretation and note the
   ambiguity; do not silently expand
+- A spec, source being ported, or enumerated requirement list is NOT
+  ambiguous scope — implement all of it; the above is not license to trim it
 
 **Anti-patterns to avoid:**
 
@@ -89,3 +118,4 @@ known Opus tendencies (validated in production):
 | Max thinking for routine tasks | 2–4× token multiplier | Adaptive thinking only when 3+ significantly different approaches exist (see `extended-thinking.md`) |
 | Haiku for code generation | Under-powered; produces more errors requiring fix loops | Sonnet minimum for any task that writes or modifies code |
 | Sonnet for simple scoring/grep | Wasted cost | Haiku for pass/fail checks, dedup, format validation |
+| Tool list >8 per agent | Decision paralysis; wasted token selection | Scope to 3–5 tools per agent; delegate to narrower specialists (Exception: Serena MCP navigation tools — all 8 entries count as one navigation capability for this limit.) |

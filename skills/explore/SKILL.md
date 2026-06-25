@@ -5,7 +5,36 @@ disable-model-invocation: false
 context: fork
 ---
 
+Model routing: Sonnet for implementation; Haiku for verification/scoring; Opus only for explicit architectural decisions.
+
 Perform a full architecture exploration of the current project and its related repositories within the same GitHub organization.
+
+## Model Routing
+
+| Step | Agent role | Model |
+|------|-----------|-------|
+| Per-repo analysis agents | Code/architecture reading | `sonnet` |
+| Diagram generation | Mermaid/doc writing | `sonnet` |
+| Dedup / inventory passes | Pass/fail, counting | `haiku` |
+
+## Step 0 — Resume check
+
+Before doing anything else, check whether `docs/architecture/overview.md`
+exists in the current working directory.
+
+**If it exists:**
+1. List all files present under `docs/architecture/`.
+2. Print: `Existing architecture docs found: [list files]`
+3. Ask the user: "Architecture docs already exist. Supplement (add missing
+   sections) or regenerate from scratch?"
+   - **Supplement**: skip Setup and re-run only the deliverable sections
+     for files that are missing or stale.
+   - **Regenerate**: proceed normally from Setup, overwriting all existing
+     docs.
+
+**If it does not exist:** continue to Setup as normal.
+
+---
 
 ## Setup
 
@@ -19,6 +48,7 @@ Perform a full architecture exploration of the current project and its related r
 6. Determine the parent directory of the current project: `PARENT=$(git rev-parse --show-toplevel | xargs dirname)`.
 7. For each related repo that isn't already cloned as a sibling of the current project:
    - Clone it into `$PARENT/<repo-name>` using `gh repo clone $ORG/<repo-name> $PARENT/<repo-name>`
+   - On a transient `gh`/clone/network failure (5xx, connection refused, read timeout), retry per `~/.claude/rules/retry-idempotency.md` (max 3 attempts, exponential backoff) before skipping that repo. Do not retry on 4xx (e.g. 404 repo not found) except 429.
 
 ## Analyze each repository (current + cloned)
 

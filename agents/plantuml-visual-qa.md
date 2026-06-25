@@ -9,6 +9,8 @@ model: opus
 
 Compare local diagram renderings against committed plantuml.com reference images, identify all Tier 1 structural failures across the six acceptance principles, and report differences with source-file attribution and suggested fixes.
 
+**Output format:** Return a structured table — one row per diagram type, columns: Tier 1 failures found | source file | suggested fix. No preamble, no trailing summary.
+
 ## Workflow
 
 ### Step 1 — Capture reference images (only when needed)
@@ -198,6 +200,7 @@ Applies only to `@startdot` diagrams. Evaluate each fixture row in the
 No structural element — node, label, edge, arrowhead — may be cut off at the
 SVG viewBox boundary. Any clipping is a Tier 1 failure. This includes:
 
+
 - Sequence participant footer boxes at the bottom
 - Edge labels or arcs near the diagram boundary
 - State transition arcs that curve beyond expected bounds
@@ -287,3 +290,4 @@ cosmetic differences observed."
 - Preview container: `#preview`
 - Reference images committed at: `tests/visual/reference/<type>/canonical.png`
 - Report output: `test-results/visual-qa/index.html` (gitignored)
+

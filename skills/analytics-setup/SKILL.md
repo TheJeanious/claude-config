@@ -1,4 +1,13 @@
+---
+name: analytics-setup
+description: Plan and instrument PostHog analytics into a Cloudflare Workers + Neon + React/Vite project — produces a reviewed event plan, then wires backend captureEvent calls and a consent-gated frontend AnalyticsContext.
+user-invocable: true
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebFetch, WebSearch
+---
+
 # /analytics-setup
+
+Model routing: Sonnet for implementation; Haiku for verification/scoring; Opus only for explicit architectural decisions.
 
 Figure out what to instrument in PostHog for a Cloudflare Workers + Neon +
 React/Vite project, then wire up the infrastructure and implement the events.
@@ -6,6 +15,29 @@ React/Vite project, then wire up the infrastructure and implement the events.
 The hard part is the event plan — reading the product and deciding *what matters*
 before writing any code. This skill produces a recommended event plan, presents
 it for review, then implements it.
+
+---
+
+## Step 0 — Resume check
+
+Before doing anything else, check whether `.analytics-setup-progress.md` exists
+in the working directory.
+
+**If it exists:**
+1. Read it.
+2. If `collected_inputs: true` is present, extract the stored inputs (and the
+   approved event plan, if recorded) — do not re-ask or re-derive them.
+3. Find the first step checkbox that is still `[ ]` (unchecked).
+4. Print: `Resuming from [step name].`
+5. Skip Step 1 entirely and jump directly to the first unchecked step.
+
+**If it does not exist:** continue to Step 1 as normal.
+
+**Step execution policy (applies to Steps 2–14):**
+After completing each step, mark its checkbox `[x]` in
+`.analytics-setup-progress.md`. If a step's verify check fails, stop and report
+the full error — do not continue to the next step. The user resolves the issue
+and resumes (Step 0 picks up from the first unchecked step on the next run).
 
 ---
 
@@ -27,6 +59,37 @@ Ask these before doing any work:
    "Which plan size do power users buy first?", "How often do users return?"
 6. **Are there multiple channels users come from?** (add-in, web, email link,
    referral) — used to recommend `utm_source` / `$referrer` properties.
+
+After all questions are answered, write `.analytics-setup-progress.md` in the
+working directory before doing any implementation work:
+
+```
+# Analytics Setup Progress
+collected_inputs: true
+
+## Inputs
+<record each collected input as a key: value line>
+
+## Approved event plan
+<recorded after Step 3 approval>
+
+## Steps
+- [ ] read-project
+- [ ] event-plan
+- [ ] read-templates
+- [ ] verify-posthog-docs
+- [ ] install-posthog
+- [ ] backend-service
+- [ ] analytics-event-constants
+- [ ] frontend-context
+- [ ] pageviewtracker
+- [ ] wire-app-root
+- [ ] backend-events
+- [ ] frontend-events
+- [ ] env-vars
+- [ ] write-tests
+- [ ] verify
+```
 
 ---
 
@@ -121,6 +184,20 @@ After the plan is approved, read all templates:
 - `frontend/AnalyticsContext.tsx`
 - `frontend/PageViewTracker.tsx`
 - `shared/constants_analytics.ts`
+
+---
+
+## Step 4b — Verify the PostHog API surface against current docs
+
+The backend service posts to PostHog's capture API directly (no SDK). Before
+wiring those calls, WebFetch the current docs and confirm the endpoint path,
+request body shape (`api_key`, `event`, `distinct_id`, `properties`), and host:
+
+- Capture API — https://posthog.com/docs/api/capture
+- `posthog-js` init/capture/identify surface — https://posthog.com/docs/libraries/js
+
+If the capture endpoint path or payload keys have changed, adapt
+`backend/services_analytics.ts` (and the frontend init) before relying on them.
 
 ---
 
@@ -292,8 +369,16 @@ build time, not a secret.
 
 ---
 
+## Step 13b — Write tests
+
+Write at minimum:
+- **Event emission test**: call the core action API — assert the backend analytics event is queued/sent.
+- **No-consent test**: if compliance-setup is in place, assert events do NOT fire when consent is absent.
+- **Identify test**: call login endpoint — assert `identify()` fires with the user ID.
+
 ## Step 14 — Verify
 
+0. Run `npx tsc --noEmit` — fix any type errors before proceeding.
 1. Open the app locally and perform the core action (create → start → complete
    an item). Check PostHog Live Events — confirm events arrive with the
    expected properties.
@@ -303,6 +388,22 @@ build time, not a secret.
    confirm `api_error` appears.
 5. If compliance-setup is in place, confirm that events do NOT fire before
    analytics consent is given in the Termly banner.
+
+---
+
+## Operational Readiness
+
+**SLI examples:**
+- Event ingestion rate: PostHog events captured per minute
+- Identify call success rate: % of `identify()` calls that return 2xx
+- Page/screen event error rate: % of analytics calls that fail or time out
+
+**Key failure modes:**
+- PostHog capture blocked by ad blocker → detected by near-zero event rate in PostHog dashboard; mitigation: use PostHog reverse proxy
+- Consent gate misconfigured → analytics fires before consent; detected by comparing event timestamps to consent_granted events; mitigation: audit consent gate logic
+- Missing `identify()` calls → anonymous events not tied to users; detected by high anonymous event % in PostHog; mitigation: check auth middleware ordering
+
+**Rollback classification:** Reversible — removing PostHog calls and reverting event handlers restores prior state with no data migration needed.
 
 ---
 

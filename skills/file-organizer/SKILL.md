@@ -3,6 +3,8 @@ name: file-organizer
 description: Intelligently organizes your files and folders across your computer by understanding context, finding duplicates, suggesting better structures, and automating cleanup tasks. Reduces cognitive load and keeps your digital workspace tidy without manual effort.
 ---
 
+Model routing: Sonnet for implementation; Haiku for verification/scoring; Opus only for explicit architectural decisions.
+
 # File Organizer
 
 This skill acts as your personal organization assistant, helping you maintain a clean, logical file structure across your computer without the mental overhead of constant manual organization.
@@ -57,14 +59,14 @@ When a user requests file organization help:
 
    When requested, search for duplicates:
    ```bash
-   # Find exact duplicates by hash
-   find [directory] -type f -exec md5 {} \; | sort | uniq -d
+   # Find exact duplicates by hash (cross-platform: md5 on macOS, md5sum on Linux)
+   find [directory] -type f -exec sh -c 'command -v md5 >/dev/null && md5 "$1" || md5sum "$1"' _ {} \; | sort | uniq -d
 
-   # Find files with same name (macOS-compatible)
+   # Find files with same name
    find [directory] -type f -exec basename {} \; | sort | uniq -d
 
-   # Find similar-sized files
-   find [directory] -type f -printf '%s %p\n' | sort -n
+   # Find similar-sized files (cross-platform: -ls works on both macOS and Linux)
+   find [directory] -type f -ls | awk '{print $7, $NF}' | sort -n
    ```
 
    For each duplicate set: show all file paths, display sizes and modification

@@ -348,6 +348,7 @@ Print the path to the generated brief and tell the user:
 > To start autonomous execution:
 > 1. `~/.claude/hooks/autonomous-toggle.sh on .`
 > 2. "Execute the mission brief at plans/[name]/README.md"
+> Recommended execution model: `claude-opus-4-8` (long-horizon, native 1M context). Enable with `~/.claude/hooks/autonomous-toggle.sh on`.
 
 ## Rules
 
@@ -398,6 +399,7 @@ Use these defaults when invoking agents during brief generation:
 
 | Phase | Task | Model |
 |-------|------|-------|
+| Brief execution (autonomous) | Long-horizon autonomous execution (this brief) | `claude-opus-4-8` — native 1M context; use via autonomous-toggle |
 | Phase 3 | Architecture decisions (multiple competing trade-offs) | Opus + adaptive thinking |
 | Phase 4 | Operational readiness questions | Sonnet |
 | Phase 5 | Task decomposition | Opus + adaptive thinking |
@@ -406,3 +408,10 @@ Use these defaults when invoking agents during brief generation:
 
 Request extended thinking for Phase 3 and 5 explicitly:
 "Think through the trade-offs before recommending an approach."
+
+**Brevity constraints for Opus phases** (per arxiv:2604.00025 — Opus over-elaborates on
+planning tasks without explicit constraints):
+- Phase 3: "Return only the architecture decisions. Format: numbered ADR list, one sentence
+  each for Context / Decision / Consequences. No prose introduction or trailing summary."
+- Phase 5: "Return only the task breakdown. Format: numbered task list with write-set,
+  read-set, and acceptance criteria per task. No prose introduction or trailing summary."
